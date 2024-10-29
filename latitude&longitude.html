@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>获取当前位置经纬度</title>
+</head>
+
+<body>
+  <h1>当前位置经纬度</h1>
+  <p id="latitude"></p>
+  <p id="longitude"></p>
+
+  <script>
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(function (position) {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+        document.getElementById('latitude').textContent = '纬度: ' + latitude;
+        document.getElementById('longitude').textContent = '经度: ' + longitude;
+      }, function (error) {
+        console.error('获取位置信息失败：', error.message);
+      });
+    } else {
+      console.error('您的浏览器不支持地理位置定位。');
+    }
+  </script>
+</body>
+
+</html>
