@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>导航主页</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #f5f6fa;
+        }
+
+        #top-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 25%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            background: white;
+            padding: 8px;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 600px;
+            justify-content: center; 
+        }
+
+        .custom-select {
+            position: relative;
+            width: 40px; /* 固定图标宽度 */
+
+
+
+        }
+
+        .custom-select button {
+            border: none;
+            background: white; /* 修改为白色背景 */
+            cursor: pointer; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .custom-select button img {
+            width: 30px; /* 图标大小 */
+            height: 30px;
+        }
+
+        .custom-select .dropdown-content {
+            position: absolute;
+            top: 100%;
+            left: 0%;
+            background-color: white;
+            border-radius: 10px;
+            min-width: 50px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+            display: none;
+        }
+
+        .custom-select .dropdown-content a {
+            padding: 10px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .custom-select .dropdown-content a img {
+            width: 25px;
+            height: 25px;
+            
+        }
+
+        .custom-select:hover .dropdown-content {
+            display: block;
+        }
+
+        #search-input {
+            flex: 1;
+            border: none;
+            background: white;
+            padding: 8px 8px 8px 8px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .search-bar button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .search-bar button:hover {
+            background: #764ba2;
+        }
+
+        #bottom-section {
+            flex: 1;
+            background-color: white);
+            padding: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 25px;
+            overflow-y: auto;
+            border-radius: 0px 0px 0 0;
+            margin-top: 0px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+
+        .icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1;
+            border-radius: 16px;
+            background-color: #94a09f;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: #444;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .icon-image {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+
+        .icon img {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 8px;
+        }
+
+        .icon-text {
+            font-size: 14px;
+            text-align: center;
+            color: #666;
+        }
+
+        .icon:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            background-color: #f0f2f5;
+        }
+
+        /* 自定义滚动条 */
+        #bottom-section::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #bottom-section::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        #bottom-section::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        #bottom-section::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<body>
+    <div id="top-section">
+        <div class="search-bar">
+            <div class="custom-select">
+                <button id="search-engine-button" class="custom-select" style="border: none; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <img src="https://www.baidu.com/favicon.ico" alt="搜索引擎图标">
+                </button>
+                <div class="dropdown-content">
+                    <a href="#" onclick="changeSearchEngine('https://www.baidu.com/s?wd=', this)">
+                        <img src="https://www.baidu.com/favicon.ico" alt="百度">
+                    </a>
+                    <a href="#" onclick="changeSearchEngine('https://www.google.com/search?q=', this)">
+                        <img src="https://www.google.com/favicon.ico" alt="Google">
+                    </a>
+                    
+                </div>
+            </div>
+            <input type="text" id="search-input" placeholder="输入关键词搜索...">
+            <button onclick="performSearch()">搜索</button>
+        </div>
+    </div>
+
+
+
+    <div id="bottom-section">
+        <!-- 图标示例 -->
+        <a href="#" class="icon">
+            <div class="icon-image">
+                <img src="https://www.baidu.com/favicon.ico" alt="百度">
+            </div>
+        </a>
+        <a href="#" class="icon">
+            <div class="icon-image">
+                <img src="https://www.google.com/favicon.ico" alt="Google">
+            </div>
+        </a>
+       
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        <!-- 更多图标 -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <script>
+        let currentEngine = 'https://www.baidu.com/s?wd='; // 默认百度
+
+        function performSearch() {
+            const query = document.getElementById('search-input').value.trim();
+            if (query) {
+                window.open(currentEngine + encodeURIComponent(query), '_blank');
+            }
+        }
+
+        function changeSearchEngine(engineUrl, element) {
+            currentEngine = engineUrl;
+            document.getElementById('search-engine-button').innerHTML = `<img src="${element.querySelector('img').src}" alt="搜索引擎图标">`;
+        }
+
+        // 添加回车搜索功能
+        document.getElementById('search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+    </script>
+</body>
+</html>
