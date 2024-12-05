@@ -1,27 +1,31 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>导航主页</title>
+    <title>带有搜索功能的上下布局页面</title>
     <style>
-        body {
+        /* 整体页面样式 */
+        html, body {
             margin: 0;
-            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-            display: flex;
-            flex-direction: column;
+            padding: 0;
             height: 100vh;
-            background-color: #f5f6fa;
+            box-sizing: border-box;
+            /* font-family: Arial, sans-serif; */
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
         }
 
-        #top-section {
+        /* 上部分样式 */
+        .top-section {
+            /* background-color:lightskyblue; */
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 25%;
+            height: 25vh;
+            min-height: 180px;
             display: flex;
-            align-items: center;
             justify-content: center;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            align-items: center;
+
         }
 
         .search-bar {
@@ -29,299 +33,506 @@
             gap: 10px;
             background: white;
             padding: 8px;
-            border-radius: 50px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 0px 50px 50px 0px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             width: 90%;
             max-width: 600px;
-            justify-content: center; 
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3); /* 添加阴影效果 */
+            transition: transform 0.6s, box-shadow 0.6s; /* 添加动画效果 */
         }
 
-        .custom-select {
-            position: relative;
-            width: 40px; /* 固定图标宽度 */
-
-
-
+        .search-bar:hover {
+            transform: scale(1); /* 鼠标悬停时放大 */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4); /* 添加阴影效果 */
         }
 
-        .custom-select button {
-            border: none;
-            background: white; /* 修改为白色背景 */
-            cursor: pointer; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
 
-        .custom-select button img {
-            width: 30px; /* 图标大小 */
-            height: 30px;
-        }
 
-        .custom-select .dropdown-content {
-            position: absolute;
-            top: 100%;
-            left: 0%;
+        /* Google搜索按钮样式 */
+        .google-button {
             background-color: white;
-            border-radius: 10px;
-            min-width: 50px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-            z-index: 1;
-            display: none;
-        }
-
-        .custom-select .dropdown-content a {
-            padding: 10px;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .custom-select .dropdown-content a img {
-            width: 25px;
-            height: 25px;
-            
-        }
-
-        .custom-select:hover .dropdown-content {
-            display: block;
-        }
-
-        #search-input {
-            flex: 1;
+            color: #333;
             border: none;
-            background: white;
-            padding: 8px 8px 8px 8px;
+            padding: 5px 0px;
+            border-radius: 0px;
             font-size: 16px;
+        }
+
+        input[type="text"] {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            flex: 1; /* 使输入框占据剩余空间 */
+        }
+        input:focus {
             outline: none;
         }
 
-        .search-bar button {
+        /* 百度搜索按钮样式 */
+        .baidu-button {
             background: #667eea;
             color: white;
             border: none;
-            padding: 8px 25px;
+            padding: 8px 15px;
             border-radius: 25px;
             cursor: pointer;
             font-size: 16px;
             transition: background 0.3s;
         }
 
-        .search-bar button:hover {
+        .baidu-button:hover {
             background: #764ba2;
         }
 
-        #bottom-section {
-            flex: 1;
-            background-color: white);
-            padding: 30px;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-            gap: 25px;
-            overflow-y: auto;
-            border-radius: 0px 0px 0 0;
-            margin-top: 0px;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        
+
+        /* 下部分样式 */
+        .bottom-section {
+            background-color: lightskyblue;
+            margin: 0;
+            padding-top: 30px;
+            height: 75vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; 
+           
         }
 
+        #icon-container {
+            
+            
+            display: grid;
+            width: auto;
+			max-width: 1200px;
+            margin: 0 auto;  /* 横向居中 */
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); /* 设置列 */
+            grid-auto-rows: 80px; /* 设置行高，确保行间距 */
+            gap: 20px; /* 设置图标之间的间距 */
+        }
         .icon {
+            width: 80px; /* 宽度与高度相同 */
+            height: 80px; /* 固定高度 */
+            cursor: pointer;
+            /* margin: 0; */
             display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px; /* 圆角效果 */
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5); /* 添加阴影效果 */
+            transition: transform 0.3s, box-shadow 0.3s; /* 添加动画效果 */
+        }
+        .icon:hover {
+            transform: scale(1.1); /* 鼠标悬停时放大 */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.8); /* 添加阴影效果 */
+        }
+        .icon img {
+            max-width: 100%; /* 确保图片大小适配容器 */
+            max-height: 100%; /* 保证图片不会超出容器 */
+            border-radius: 18px; /* 圆角效果 */
+        }
+
+
+        .iconDiv {
+            display: flex;
+            margin: 10px;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            aspect-ratio: 1;
-            border-radius: 16px;
-            background-color: #94a09f;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            text-decoration: none;
-            color: #444;
-            position: relative;
-            overflow: hidden;
+            width: 80px;
+            height: 80px;
         }
 
-        .icon-image {
-            width: 40px;
-            height: 40px;
+        #icon-container {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 8px;
+            margin: 20px 60px;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 30px;
         }
 
-        .icon img {
-            max-width: 100%;
-            max-height: 100%;
-            border-radius: 8px;
-        }
 
-        .icon-text {
-            font-size: 14px;
-            text-align: center;
-            color: #666;
-        }
 
-        .icon:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            background-color: #f0f2f5;
-        }
 
-        /* 自定义滚动条 */
-        #bottom-section::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        #bottom-section::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-
-        #bottom-section::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 4px;
-        }
-
-        #bottom-section::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
     </style>
 </head>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 <body>
-    <div id="top-section">
-        <div class="search-bar">
-            <div class="custom-select">
-                <button id="search-engine-button" class="custom-select" style="border: none; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                    <img src="https://www.baidu.com/favicon.ico" alt="搜索引擎图标">
-                </button>
-                <div class="dropdown-content">
-                    <a href="#" onclick="changeSearchEngine('https://www.baidu.com/s?wd=', this)">
-                        <img src="https://www.baidu.com/favicon.ico" alt="百度">
-                    </a>
-                    <a href="#" onclick="changeSearchEngine('https://www.google.com/search?q=', this)">
-                        <img src="https://www.google.com/favicon.ico" alt="Google">
-                    </a>
-                    
-                </div>
+    <div class="container">
+        <div class="top-section">
+            <div class="search-bar">
+                <button id="googleButton" class="google-button">Go</button>
+                <input type="text" id="searchInput" placeholder="请输入搜索内容" autocomplete="off">
+                <button id="baidusearchButton" class="baidu-button">搜索</button>
             </div>
-            <input type="text" id="search-input" placeholder="输入关键词搜索...">
-            <button onclick="performSearch()">搜索</button>
+        </div>
+        <div class="bottom-section">
+
+            <div id="icon-container"></div> 
+
+    <script>
+        // 图标数据结构
+        const icons = [
+            {
+                name: "Github",
+                icon: "https://files.codelife.cc/website/github.svg",
+                url: "https://www.github.com",
+                backgroundColor: "#1DA1F2"
+            },
+            {
+                name: "Instagram",
+                icon: "https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png",
+                url: "https://www.instagram.com",
+                backgroundColor: "#C13584"
+            },
+            {
+                name: "Bilibili",
+                icon: "https://files.codelife.cc/website/bilibili2.svg",
+                url: "https://www.bilibili.com",
+                backgroundColor: "#00A1D6"
+            },
+            {
+                name: "豆包",
+                icon: "https://files.codelife.cc/icons/doubao.com.webp?x-oss-process=image/resize,limit_0,m_fill,w_100,h_100/quality,q_92/format,webp",
+                url: "https://www.doubao.com",
+                backgroundColor: "#FF5000"
+            },
+            
+            {
+                name: "chatGPT",
+                icon: "https://files.codelife.cc/icons/2d81ec7094a71c53.png?x-oss-process=image/resize,limit_0,m_fill,w_100,h_100/quality,q_92/format,webp",
+                url: "https://www.chatgpt.com",
+                backgroundColor: "black"
+            },
+            
+            {
+                name: "163.com",
+                icon: "https://files.codelife.cc/website/mail-163.svg",
+                url: "https://www.163.com",
+                backgroundColor: "#1DA1F2"
+            },
+            {
+                name: "douban",
+                icon: "https://files.codelife.cc/website/douban.svg",
+                url: "https://www.douban.com",
+                backgroundColor: "#3b5998"
+            },
+            {
+                name: "wangyiyun",
+                icon: "https://files.codelife.cc/website/music163.svg",
+                url: "https://music.163.com",
+                backgroundColor: "#D43C33"
+            },
+            {
+                name: "Github",
+                icon: "https://files.codelife.cc/website/github.svg",
+                url: "https://www.github.com",
+                backgroundColor: "#1DA1F2"
+            },
+            {
+                name: "Instagram",
+                icon: "https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png",
+                url: "https://www.instagram.com",
+                backgroundColor: "#C13584"
+            },
+            {
+                name: "Bilibili",
+                icon: "https://files.codelife.cc/website/bilibili2.svg",
+                url: "https://www.bilibili.com",
+                backgroundColor: "#00A1D6"
+            },
+            {
+                name: "豆包",
+                icon: "https://files.codelife.cc/icons/doubao.com.webp?x-oss-process=image/resize,limit_0,m_fill,w_100,h_100/quality,q_92/format,webp",
+                url: "https://www.doubao.com",
+                backgroundColor: "#FF5000"
+            },
+            
+            {
+                name: "chatGPT",
+                icon: "https://files.codelife.cc/icons/2d81ec7094a71c53.png?x-oss-process=image/resize,limit_0,m_fill,w_100,h_100/quality,q_92/format,webp",
+                url: "https://www.chatgpt.com",
+                backgroundColor: "black"
+            },
+            
+            {
+                name: "163.com",
+                icon: "https://files.codelife.cc/website/mail-163.svg",
+                url: "https://www.163.com",
+                backgroundColor: "#1DA1F2"
+            },
+            {
+                name: "douban",
+                icon: "https://files.codelife.cc/website/douban.svg",
+                url: "https://www.douban.com",
+                backgroundColor: "#3b5998"
+            },
+            {
+                name: "wangyiyun",
+                icon: "https://files.codelife.cc/website/music163.svg",
+                url: "https://music.163.com",
+                backgroundColor: "#D43C33"
+            },
+            {
+                name: "Github",
+                icon: "https://files.codelife.cc/website/github.svg",
+                url: "https://www.github.com",
+                backgroundColor: "#1DA1F2"
+            },
+            {
+                name: "Instagram",
+                icon: "https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png",
+                url: "https://www.instagram.com",
+                backgroundColor: "#C13584"
+            },
+            {
+                name: "Bilibili",
+                icon: "https://files.codelife.cc/website/bilibili2.svg",
+                url: "https://www.bilibili.com",
+                backgroundColor: "#00A1D6"
+            },
+            {
+                name: "豆包",
+                icon: "https://files.codelife.cc/icons/doubao.com.webp?x-oss-process=image/resize,limit_0,m_fill,w_100,h_100/quality,q_92/format,webp",
+                url: "https://www.doubao.com",
+                backgroundColor: "#FF5000"
+            },
+            
+            {
+                name: "chatGPT",
+                icon: "https://files.codelife.cc/icons/2d81ec7094a71c53.png?x-oss-process=image/resize,limit_0,m_fill,w_100,h_100/quality,q_92/format,webp",
+                url: "https://www.chatgpt.com",
+                backgroundColor: "black"
+            },
+            
+            {
+                name: "163.com",
+                icon: "https://files.codelife.cc/website/mail-163.svg",
+                url: "https://www.163.com",
+                backgroundColor: "#1DA1F2"
+            },
+            {
+                name: "douban",
+                icon: "https://files.codelife.cc/website/douban.svg",
+                url: "https://www.douban.com",
+                backgroundColor: "#3b5998"
+            },
+            {
+                name: "wangyiyun",
+                icon: "https://files.codelife.cc/website/music163.svg",
+                url: "https://music.163.com",
+                backgroundColor: "#D43C33"
+            },
+            {
+                name: "Github",
+                icon: "https://files.codelife.cc/website/github.svg",
+                url: "https://www.github.com",
+                backgroundColor: "#1DA1F2"
+            },
+            {
+                name: "Instagram",
+                icon: "https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png",
+                url: "https://www.instagram.com",
+                backgroundColor: "#C13584"
+            },
+            {
+                name: "Bilibili",
+                icon: "https://files.codelife.cc/website/bilibili2.svg",
+                url: "https://www.bilibili.com",
+                backgroundColor: "#00A1D6"
+            },
+            {
+                name: "豆包",
+                icon: "https://files.codelife.cc/icons/doubao.com.webp?x-oss-process=image/resize,limit_0,m_fill,w_100,h_100/quality,q_92/format,webp",
+                url: "https://www.doubao.com",
+                backgroundColor: "#FF5000"
+            },
+            
+            {
+                name: "chatGPT",
+                icon: "https://files.codelife.cc/icons/2d81ec7094a71c53.png?x-oss-process=image/resize,limit_0,m_fill,w_100,h_100/quality,q_92/format,webp",
+                url: "https://www.chatgpt.com",
+                backgroundColor: "black"
+            },
+            
+            {
+                name: "163.com",
+                icon: "https://files.codelife.cc/website/mail-163.svg",
+                url: "https://www.163.com",
+                backgroundColor: "#1DA1F2"
+            },
+            {
+                name: "douban",
+                icon: "https://files.codelife.cc/website/douban.svg",
+                url: "https://www.douban.com",
+                backgroundColor: "#3b5998"
+            },
+            {
+                name: "wangyiyun",
+                icon: "https://files.codelife.cc/website/music163.svg",
+                url: "https://music.163.com",
+                backgroundColor: "#D43C33"
+            },
+            {
+                name: "Github",
+                icon: "https://files.codelife.cc/website/github.svg",
+                url: "https://www.github.com",
+                backgroundColor: "#1DA1F2"
+            },
+            {
+                name: "Instagram",
+                icon: "https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png",
+                url: "https://www.instagram.com",
+                backgroundColor: "#C13584"
+            },
+            {
+                name: "Bilibili",
+                icon: "https://files.codelife.cc/website/bilibili2.svg",
+                url: "https://www.bilibili.com",
+                backgroundColor: "#00A1D6"
+            },
+            {
+                name: "豆包",
+                icon: "https://files.codelife.cc/icons/doubao.com.webp?x-oss-process=image/resize,limit_0,m_fill,w_100,h_100/quality,q_92/format,webp",
+                url: "https://www.doubao.com",
+                backgroundColor: "#FF5000"
+            },
+            
+            {
+                name: "chatGPT",
+                icon: "https://files.codelife.cc/icons/2d81ec7094a71c53.png?x-oss-process=image/resize,limit_0,m_fill,w_100,h_100/quality,q_92/format,webp",
+                url: "https://www.chatgpt.com",
+                backgroundColor: "black"
+            },
+            
+            {
+                name: "163.com",
+                icon: "https://files.codelife.cc/website/mail-163.svg",
+                url: "https://www.163.com",
+                backgroundColor: "#1DA1F2"
+            },
+            {
+                name: "douban",
+                icon: "https://files.codelife.cc/website/douban.svg",
+                url: "https://www.douban.com",
+                backgroundColor: "#3b5998"
+            },
+            {
+                name: "wangyiyun",
+                icon: "https://files.codelife.cc/website/music163.svg",
+                url: "https://music.163.com",
+                backgroundColor: "#D43C33"
+            },
+            {
+                name: "Github",
+                icon: "https://files.codelife.cc/website/github.svg",
+                url: "https://www.github.com",
+                backgroundColor: "#1DA1F2"
+            },
+            {
+                name: "Instagram",
+                icon: "https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png",
+                url: "https://www.instagram.com",
+                backgroundColor: "#C13584"
+            },
+            {
+                name: "Bilibili",
+                icon: "https://files.codelife.cc/website/bilibili2.svg",
+                url: "https://www.bilibili.com",
+                backgroundColor: "#00A1D6"
+            },
+            {
+                name: "豆包",
+                icon: "https://files.codelife.cc/icons/doubao.com.webp?x-oss-process=image/resize,limit_0,m_fill,w_100,h_100/quality,q_92/format,webp",
+                url: "https://www.doubao.com",
+                backgroundColor: "#FF5000"
+            },
+            
+            {
+                name: "chatGPT",
+                icon: "https://files.codelife.cc/icons/2d81ec7094a71c53.png?x-oss-process=image/resize,limit_0,m_fill,w_100,h_100/quality,q_92/format,webp",
+                url: "https://www.chatgpt.com",
+                backgroundColor: "black"
+            },
+            
+            {
+                name: "163.com",
+                icon: "https://files.codelife.cc/website/mail-163.svg",
+                url: "https://www.163.com",
+                backgroundColor: "#1DA1F2"
+            },
+            {
+                name: "douban",
+                icon: "https://files.codelife.cc/website/douban.svg",
+                url: "https://www.douban.com",
+                backgroundColor: "#3b5998"
+            },
+            {
+                name: "wangyiyun",
+                icon: "https://files.codelife.cc/website/music163.svg",
+                url: "https://music.163.com",
+                backgroundColor: "#D43C33"
+            },
+            
+
+            
+        ];
+
+        // 动态生成图标
+        const container = document.getElementById('icon-container');
+        icons.forEach(item => {
+            const iconDiv = document.createElement('div');
+            iconDiv.className = 'icon';
+            iconDiv.style.backgroundColor = item.backgroundColor; // 设置背景颜色
+
+            const img = document.createElement('img');
+            img.src = item.icon;
+            img.alt = item.name; // 设置备用文本
+
+            // 点击跳转链接
+            iconDiv.onclick = () => window.open(item.url, '_self');
+
+            // 将图片加入图标框
+            iconDiv.appendChild(img);
+            container.appendChild(iconDiv);
+        });
+    </script>
+
+
+
+
+
+
         </div>
     </div>
 
-
-
-    <div id="bottom-section">
-        <!-- 图标示例 -->
-        <a href="#" class="icon">
-            <div class="icon-image">
-                <img src="https://www.baidu.com/favicon.ico" alt="百度">
-            </div>
-        </a>
-        <a href="#" class="icon">
-            <div class="icon-image">
-                <img src="https://www.google.com/favicon.ico" alt="Google">
-            </div>
-        </a>
-       
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        <!-- 更多图标 -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     <script>
-        let currentEngine = 'https://www.baidu.com/s?wd='; // 默认百度
+        // 获取页面中的按钮和搜索输入框元素
+        const baiduButton = document.getElementById('baidusearchButton');
+        const googleButton = document.getElementById('googleButton');
+        const searchInput = document.getElementById('searchInput');
 
-        function performSearch() {
-            const query = document.getElementById('search-input').value.trim();
-            if (query) {
-                window.open(currentEngine + encodeURIComponent(query), '_blank');
+        // 执行搜索跳转
+        function performSearch(searchUrlPrefix, searchText) {
+            if (searchText.trim() !== '') {
+                const searchUrl = `${searchUrlPrefix}${encodeURIComponent(searchText)}`;
+                window.location.href = searchUrl;
             }
         }
 
-        function changeSearchEngine(engineUrl, element) {
-            currentEngine = engineUrl;
-            document.getElementById('search-engine-button').innerHTML = `<img src="${element.querySelector('img').src}" alt="搜索引擎图标">`;
-        }
+        // 添加事件监听器
+        baiduButton.addEventListener('click', () => {
+            performSearch('https://www.baidu.com/s?wd=', searchInput.value);
+        });
 
-        // 添加回车搜索功能
-        document.getElementById('search-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                performSearch();
+        googleButton.addEventListener('click', () => {
+            performSearch('https://www.google.com/search?q=', searchInput.value);
+        });
+
+        searchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                performSearch('https://www.baidu.com/s?wd=', searchInput.value);
             }
         });
     </script>
 </body>
+
 </html>
