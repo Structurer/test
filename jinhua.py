@@ -8,7 +8,7 @@ rcParams['font.family'] = 'SimHei'
 # 扑克牌相关常量
 numbers = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
 number_values = {n: v for v, n in enumerate(numbers, start=2)}
-suits = ['♠', '♥', '♣', '♦']
+suits = ['\u2660', '\u2665', '\u2663', '\u2666']  # 黑桃、红心、梅花、方块
 
 # 生成扑克牌列表
 cards = [{'number': n, 'value': number_values[n], 'suit': s} for n in numbers for s in suits]
@@ -40,7 +40,7 @@ def analyze_combinations(cards):
     """生成所有组合并分类、分级"""
     combinations = list(itertools.combinations(cards, 3))
     hand_type_count = {'豹子': 0, '顺金': 0, '普金': 0, '普顺': 0, '对子': 0, '单张': 0}
-    results, unique_ranks = [], set()
+    results = []
 
     for combo in combinations:
         hand_type, score, compare_value = classify_hand(combo)
@@ -56,6 +56,22 @@ def analyze_combinations(cards):
             rank -= 1
         ranked_results.append((combo, hand_type, all_compare_value, rank))
     return hand_type_count, ranked_results
+
+def save_results_to_file(hand_type_count, ranked_results, filename='jinhua.txt'):
+    """将分析结果保存到文件"""
+    with open(filename, 'w', encoding='UTF-8') as file:
+        # 写入牌型统计
+        file.write("各牌型等级个数统计:\n")
+        file.write(f"52张牌中任意抽三张，排列组合有52*51*50/(3*2*1)={len(ranked_results)}种\n")
+        for hand_type, count in hand_type_count.items():
+            file.write(f"{hand_type}: {count}\n")
+        
+        # 写入详细结果
+        file.write("\n详细结果:\n")
+        for hand, hand_type, all_compare_value, rank in ranked_results:
+            cards_str = ', '.join([f"{card['suit']}{card['number']}" for card in hand])
+            compare_str = ', '.join(map(str, all_compare_value))  # 比较值可视化
+            file.write(f"{cards_str} - {hand_type} - ({compare_str}) - {rank}\n")
 
 def plot_rank_distribution(ranked_results):
     """绘制等级分布的柱状图"""
@@ -84,8 +100,13 @@ def plot_rank_distribution(ranked_results):
     # 显示图表
     plt.show()
 
-# 分析扑克牌组合
-hand_type_count, ranked_results = analyze_combinations(cards)
+# 主程序
+if __name__ == "__main__":
+    # 分析扑克牌组合
+    hand_type_count, ranked_results = analyze_combinations(cards)
 
-# 绘制等级分布图
-plot_rank_distribution(ranked_results)
+    # 保存分析结果到文件
+    save_results_to_file(hand_type_count, ranked_results, filename='jinhua.txt')
+
+    # 绘制等级分布图
+    plot_rank_distribution(ranked_results)
