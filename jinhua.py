@@ -1,9 +1,10 @@
 import itertools
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
+import numpy as np
+
 # 设置matplotlib的字体为支持中文的字体，例如"SimHei"（黑体）
 rcParams['font.family'] = 'SimHei'
-
 
 # 定义扑克牌的点数、花色和对应的数值
 numbers = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
@@ -16,22 +17,19 @@ cards = [{'number': number, 'value': number_values[number], 'suit': suit} for nu
 # 生成所有3张牌的组合
 combinations = list(itertools.combinations(cards, 3))
 
-# print(len(combinations))
-# print(combinations)
-
 # 定义判断牌型的函数
 def classify_hand(hand):
     """
     根据三张牌分类并评分
     """
-    #手牌重组和排序
-    values = sorted([card['value'] for card in hand], reverse=True) # 按点数从大到小排序
+    # 手牌重组和排序
+    values = sorted([card['value'] for card in hand], reverse=True)  # 按点数从大到小排序
     suits = [card['suit'] for card in hand]
 
     unique_values = len(set(values))
     unique_suits = len(set(suits))
 
-   # 定义点数比较值，降序排列形成元组
+    # 定义点数比较值，降序排列形成元组
     compare_value = tuple(values)
 
     if unique_values == 1:  # 豹子
@@ -54,8 +52,6 @@ def classify_hand(hand):
     else:  # 单张
         return '单张', 1, compare_value
 
-
-
 # 用于统计每个牌型等级的个数
 hand_type_count = {
     '豹子': 0,
@@ -66,9 +62,6 @@ hand_type_count = {
     '单张': 0
 }
 
-
-
-
 # 遍历所有组合并分类
 results = []
 for combo in combinations:
@@ -76,14 +69,18 @@ for combo in combinations:
     hand_type_count[hand_type] += 1
     result = [combo, hand_type, [score] + list(compare_value)]  # 将 score 和 compare_value 放在同一个列表里
     results.append(result)
-    # results.append((combo, hand_type, score, compare_value))
 
 # 对结果排序：先按评分从高到低，再按比较值从大到小
 results.sort(key=lambda x: (x[2]), reverse=True)
 
 
+dengji_set = set()
+for result in results:
+    dengji_set.add(tuple(result[2]))
+dengji = len(dengji_set)
+
+
 i = 0
-dengji = 741
 jieguo = list()
 for result in results:
     combo, hand_type, all_compare_value = result
@@ -92,41 +89,14 @@ for result in results:
         i = i + 1
     elif results[i][2] == results[i-1][2]:
         jieguo.append((combo, hand_type, all_compare_value, dengji))
-        i = i +1
-    else :
+        i = i + 1
+    else:
         dengji = dengji - 1
         jieguo.append((combo, hand_type, all_compare_value, dengji))
-        i = i +1
-
-# print(jieguo)
+        i = i + 1
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# # 将结果输出到文件
-# with open('jinhua.txt', 'w', encoding='UTF-8') as file:
-#     file.write("各牌型等级个数统计:\n")
-#     file.write(f"52张牌中任意抽三张，排列组合有52*51*50/(3*2*1)={len(combinations)}种\n")
-#     for hand_type, count in hand_type_count.items():
-#         file.write(f"{hand_type}: {count}\n")
-#     file.write("\n详细结果:\n")
-#     for hand, hand_type, all_compare_value in results:
-#         cards_str = ', '.join([f"{card['suit']}{card['number']}" for card in hand])
-#         compare_str = ', '.join(map(str, all_compare_value))  # 比较值可视化
-#         file.write(f"{cards_str} - {(hand_type)} - ({compare_str}) \n")
 
 
 
@@ -140,7 +110,7 @@ with open('jinhua.txt', 'w', encoding='UTF-8') as file:
     for hand, hand_type, all_compare_value,dengji in jieguo:
         cards_str = ', '.join([f"{card['suit']}{card['number']}" for card in hand])
         compare_str = ', '.join(map(str, all_compare_value))  # 比较值可视化
-        file.write(f"{cards_str} - {(hand_type)} - ({compare_str}, {dengji}) \n")
+        file.write(f"{cards_str} - {(hand_type)} - ({compare_str}) - {dengji}\n")
 
 
 
@@ -156,20 +126,12 @@ with open('jinhua.txt', 'w', encoding='UTF-8') as file:
 
 
 
-# # 提取牌型名称和数量
-# hand_types = list(hand_type_count.keys())
-# counts = list(hand_type_count.values())
 
-# # 创建柱状图
-# plt.bar(hand_types, counts)
 
-# # 添加标题和标签
-# plt.title('各牌型等级个数统计')
-# plt.xlabel('牌型')
-# plt.ylabel('数量')
 
-# # 显示图表
-# plt.show()
+
+
+
 
 
 
@@ -182,22 +144,35 @@ for _, _, _, dengji in jieguo:
         dengji_count[dengji] = 0
     dengji_count[dengji] += 1
 
-
-# # 输出统计结果
-# print("dengji的个数统计:")
-# for dengji, count in sorted(dengji_count.items(), reverse=True):
-#     print(f"等级 {dengji}: {count} 次")
-
-
-
-
-
 # 提取dengji的等级和对应的次数
 dengji_levels = list(dengji_count.keys())
 counts = list(dengji_count.values())
 
-# 创建柱状图
-plt.bar(dengji_levels, counts, color='skyblue')
+# 获取所有出现过的score值
+unique_scores = sorted(set(score for _, _, [score, *_] in results))
+
+# 为每个score值分配固定的颜色
+color_map = plt.cm.get_cmap("tab10", len(unique_scores))  # 选择一个颜色映射
+score_to_color = {score: color_map(i) for i, score in enumerate(unique_scores)}
+
+# 为每个dengji值找到对应的score
+dengji_to_score = {}
+for _, _, [score, *_], dengji in jieguo:
+    if dengji not in dengji_to_score:
+        dengji_to_score[dengji] = score
+
+
+# 为每个dengji值选择对应的颜色
+dengji_colors = [score_to_color[dengji_to_score[dengji]] for dengji in dengji_levels]
+
+
+
+
+# 创建柱状图，宽度设置为1，无间隔
+bars = plt.bar(dengji_levels, counts, color=dengji_colors, width=1, align='edge')
+
+# 设置x轴范围，去掉留白
+plt.xlim(min(dengji_levels), max(dengji_levels) + 1)
 
 # 添加标题和标签
 plt.title('dengji等级分布统计')
@@ -206,10 +181,4 @@ plt.ylabel('出现次数')
 
 # 显示图表
 plt.show()
-
-
-
-
-
-
 
