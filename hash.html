@@ -35,6 +35,7 @@
             min-height: 40px;  /* Ensure hash boxes have enough height */
             display: flex;
             align-items: center; /* Vertically center the text */
+            cursor: pointer; /* Change cursor to pointer */
         }
         .hash-section {
             margin-top: 20px;
@@ -54,9 +55,9 @@
     <textarea id="inputText" placeholder="Enter text to hash..." oninput="adjustTextareaHeight(); calculateHashes()"></textarea>
     
     <div class="hash-section">
-        <p><span class="hash-label">SHA-1:</span> <span id="sha1Output" class="hash-output">SHA-1 hash will be displayed here...</span></p>
-        <p><span class="hash-label">SHA-256:</span> <span id="sha256Output" class="hash-output">SHA-256 hash will be displayed here...</span></p>
-        <p><span class="hash-label">SHA-512:</span> <span id="sha512Output" class="hash-output">SHA-512 hash will be displayed here...</span></p>
+        <p><span class="hash-label">SHA-1:</span> <span id="sha1Output" class="hash-output" onclick="copyToClipboard('sha1Output')">SHA-1 hash will be displayed here...</span></p>
+        <p><span class="hash-label">SHA-256:</span> <span id="sha256Output" class="hash-output" onclick="copyToClipboard('sha256Output')">SHA-256 hash will be displayed here...</span></p>
+        <p><span class="hash-label">SHA-512:</span> <span id="sha512Output" class="hash-output" onclick="copyToClipboard('sha512Output')">SHA-512 hash will be displayed here...</span></p>
     </div>
 </div>
 
@@ -121,6 +122,18 @@
         const textarea = document.getElementById('inputText');
         textarea.style.height = 'auto'; // Reset height
         textarea.style.height = textarea.scrollHeight + 'px'; // Set height based on content
+    }
+
+    // Function to copy text to clipboard
+    function copyToClipboard(elementId) {
+        const hashOutput = document.getElementById(elementId);
+        const textToCopy = hashOutput.textContent;
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            console.log('Hash copied to clipboard:', textToCopy);
+        }).catch(err => {
+            console.error('Error copying to clipboard:', err);
+        });
     }
 </script>
 
