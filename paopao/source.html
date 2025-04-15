@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小球效果</title>
+  <style>
+    #container {
+      width: 100%;
+      height: 100vh;
+      position: relative;
+      background-color: #f0f0f0;
+    }
+
+   .ball {
+      position: absolute;
+      border-radius: 50%;
+      background-color: lightblue;
+      border: 1px solid black; /* 1 像素黑色实线边框 */
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container"></div>
+  <script>
+    const container = document.getElementById('container');
+    let centerX, centerY;
+
+    const ballList = [];
+    let timer;
+
+    const maxRadius = 50; // 小球的最大半径，可控制小球最终大小
+    // 小球生成的时间间隔（单位：毫秒）
+    const ballCreationInterval = 1000; 
+    // 小球变大的速度，每次更新时小球半径增加的数值
+    const ballGrowSpeed = 1; 
+    // 斥力调节参数
+    const repulsionFactorValue = 100; 
+    // 引力调节参数
+    const attractionFactorValue = 0.8; 
+    // 控制方框长度相对于窗口宽度的比例
+    const boxWidthRatio = 0.8; 
+    // 控制方框宽度相对于窗口高度的比例
+    const boxHeightRatio = 0.8; 
+
+    function updateContainerSize() {
+      centerX = container.offsetWidth / 2;
+      centerY = container.offsetHeight / 2;
+    }
+
+    function createBall() {
+      const angle = Math.random() * 2 * Math.PI;
+      const distanceFromCenter = Math.random() * maxRadius;
+      const x = centerX + distanceFromCenter * Math.cos(angle);
+      const y = centerY + distanceFromCenter * Math.sin(angle);
+
+      const ball = document.createElement('div');
+      ball.classList.add('ball');
+      ball.style.left = x + 'px';
+      ball.style.top = y + 'px';
+      ball.style.width = '0px';
+      ball.style.height = '0px';
+      container.appendChild(ball);
+      ballList.push(ball);
+    }
+
+    function updateBall() {
+      const boxWidth = container.offsetWidth * boxWidthRatio;
+      const boxHeight = container.offsetHeight * boxHeightRatio;
+      const boxLeft = centerX - boxWidth / 2;
+      const boxRight = centerX + boxWidth / 2;
+      const boxTop = centerY - boxHeight / 2;
+      const boxBottom = centerY + boxHeight / 2;
+
+      ballList.forEach((ball, index) => {
+        const currentRadius = parseInt(ball.style.width) / 2;
+        if (currentRadius < maxRadius) {
+          ball.style.width = (currentRadius + ballGrowSpeed) * 2 + 'px'; 
+          ball.style.height = (currentRadius + ballGrowSpeed) * 2 + 'px';
+        }
+
+        const dxToCenter = centerX - (parseInt(ball.style.left) + currentRadius);
+        const dyToCenter = centerY - (parseInt(ball.style.top) + currentRadius);
+        const distanceToCenter = Math.sqrt(dxToCenter * dxToCenter + dyToCenter * dyToCenter);
+        const forceToCenterX = (dxToCenter / distanceToCenter) * attractionFactorValue; 
+        const forceToCenterY = (dyToCenter / distanceToCenter) * attractionFactorValue; 
+
+        let repelX = 0;
+        let repelY = 0;
+        ballList.forEach((otherBall, otherIndex) => {
+          if (index!== otherIndex) {
+            const otherRadius = parseInt(otherBall.style.width) / 2;
+            const dx = parseInt(ball.style.left) + currentRadius - (parseInt(otherBall.style.left) + otherRadius);
+            const dy = parseInt(ball.style.top) + currentRadius - (parseInt(otherBall.style.top) + otherRadius);
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < currentRadius + otherRadius) {
+              const repelFactor = repulsionFactorValue / (distance * distance); 
+              repelX += dx * repelFactor;
+              repelY += dy * repelFactor;
+            }
+          }
+        });
+
+        // 计算并处理小球与方框边界的碰撞
+        let newLeft = parseInt(ball.style.left) + forceToCenterX + repelX;
+        let newTop = parseInt(ball.style.top) + forceToCenterY + repelY;
+
+        if (newLeft < boxLeft + currentRadius) {
+          newLeft = boxLeft + currentRadius;
+        } else if (newLeft > boxRight - currentRadius) {
+          newLeft = boxRight - currentRadius;
+        }
+
+        if (newTop < boxTop + currentRadius) {
+          newTop = boxTop + currentRadius;
+        } else if (newTop > boxBottom - currentRadius) {
+          newTop = boxBottom - currentRadius;
+        }
+
+        ball.style.left = newLeft + 'px';
+        ball.style.top = newTop + 'px';
+      });
+    }
+
+    function start() {
+      updateContainerSize();
+      timer = setInterval(() => {
+        createBall();
+      }, ballCreationInterval); 
+
+      setInterval(updateBall, 50);
+    }
+
+    window.addEventListener('resize', () => {
+      updateContainerSize();
+    });
+
+    start();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,137 @@
+import struct
+import hashlib
+import tkinter as tk
+from tkinter import messagebox
+
+# 定义常量
+K = [
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+]
+
+# 初始哈希值
+H = [
+    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+    0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+]
+
+def right_rotate(value, count):
+    """循环右移"""
+    return (value >> count) | ((value << (32 - count)) & 0xFFFFFFFF)
+
+def sha256(message):
+    """实现 SHA-256 算法"""
+    # 转换消息为字节
+    if isinstance(message, str):
+        message = message.encode('utf-8')
+
+    # 填充消息
+    original_length = len(message) * 8  # 以位为单位的消息长度
+    message += b'\x80'  # 添加单个 '1' 比特（即 0x80）
+    while (len(message) * 8) % 512 != 448:
+        message += b'\x00'  # 填充 '0' 比特，直到长度模 512 等于 448
+
+    # 添加原始长度
+    message += struct.pack('>Q', original_length)
+
+    # 分块处理消息
+    chunks = [message[i:i + 64] for i in range(0, len(message), 64)]
+
+    # 初始化哈希值
+    hash_pieces = H[:]
+
+    for chunk in chunks:
+        # 分析块
+        w = list(struct.unpack('>16L', chunk)) + [0] * 48
+        for i in range(16, 64):
+            s0 = right_rotate(w[i - 15], 7) ^ right_rotate(w[i - 15], 18) ^ (w[i - 15] >> 3)
+            s1 = right_rotate(w[i - 2], 17) ^ right_rotate(w[i - 2], 19) ^ (w[i - 2] >> 10)
+            w[i] = (w[i - 16] + s0 + w[i - 7] + s1) & 0xFFFFFFFF
+
+        # 初始化工作变量
+        a, b, c, d, e, f, g, h = hash_pieces
+
+        # 主循环
+        for i in range(64):
+            s1 = right_rotate(e, 6) ^ right_rotate(e, 11) ^ right_rotate(e, 25)
+            ch = (e & f) ^ (~e & g)
+            temp1 = (h + s1 + ch + K[i] + w[i]) & 0xFFFFFFFF
+            s0 = right_rotate(a, 2) ^ right_rotate(a, 13) ^ right_rotate(a, 22)
+            maj = (a & b) ^ (a & c) ^ (b & c)
+            temp2 = (s0 + maj) & 0xFFFFFFFF
+
+            h = g
+            g = f
+            f = e
+            e = (d + temp1) & 0xFFFFFFFF
+            d = c
+            c = b
+            b = a
+            a = (temp1 + temp2) & 0xFFFFFFFF
+
+        # 更新哈希值
+        hash_pieces = [
+            (hash_pieces[0] + a) & 0xFFFFFFFF,
+            (hash_pieces[1] + b) & 0xFFFFFFFF,
+            (hash_pieces[2] + c) & 0xFFFFFFFF,
+            (hash_pieces[3] + d) & 0xFFFFFFFF,
+            (hash_pieces[4] + e) & 0xFFFFFFFF,
+            (hash_pieces[5] + f) & 0xFFFFFFFF,
+            (hash_pieces[6] + g) & 0xFFFFFFFF,
+            (hash_pieces[7] + h) & 0xFFFFFFFF
+        ]
+
+    # 拼接最终哈希值
+    return ''.join(f'{value:08x}' for value in hash_pieces)
+
+def compute_hash():
+    """处理用户输入并显示 SHA-256 结果"""
+    message = text_box.get("1.0", tk.END).strip()
+    if not message:
+        messagebox.showerror("错误", "请输入内容！")
+        return
+
+    custom_hash = sha256(message)
+    hashlib_hash = hashlib.sha256(message.encode()).hexdigest()
+
+    # 更新结果文本
+    result_text.delete(1.0, tk.END)  # 清空现有结果
+    result_text.insert(tk.END, f"A-256 哈希值:\n{custom_hash}\n\n验证哈希值 (hashlib):\n{hashlib_hash}")
+
+# 创建主窗口
+root = tk.Tk()
+root.title("Hash Generator")
+
+# 设置窗口大小及最小大小
+root.geometry("600x500")  # 设置窗口初始大小
+root.minsize(600, 500)  # 设置窗口最小尺寸
+root.maxsize(600, 500)  # 设置窗口最大尺寸
+
+# 创建标签
+label = tk.Label(root, text="请输入字符串：")
+label.grid(row=0, column=0, pady=10, padx=10, sticky="w")
+
+# 创建多行文本框
+text_box = tk.Text(root, height=8)  # 高度设置为8行
+text_box.grid(row=1, column=0, padx=10, pady=10, sticky="ew")  # sticky="ew" 让它横向填充父容器
+
+# 创建按钮
+button = tk.Button(root, text="生成哈希", command=compute_hash)
+button.grid(row=2, column=0, pady=20)
+
+# 创建结果显示框
+result_text = tk.Text(root, height=6, wrap="word", width=70, font=("Arial", 10))
+result_text.grid(row=3, column=0, padx=10, pady=10, sticky="ew")
+result_text.config(state=tk.DISABLED)  # 设置为只读模式，防止编辑
+
+# 让列宽自适应
+root.grid_columnconfigure(0, weight=1)
+
+# 运行窗口
+root.mainloop()
