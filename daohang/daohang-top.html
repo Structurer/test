@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>带有搜索功能的上下布局页面</title>
+    <style>
+        /* 整体页面样式 */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            box-sizing: border-box;
+            /* font-family: Arial, sans-serif; */
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+
+        /* 上部分样式 */
+        .top-section {
+            background-color: lightblue;
+            height: 25vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            background: white;
+            padding: 8px;
+            border-radius: 0px 50px 50px 0px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 600px;
+        }
+
+        /* Google搜索按钮样式 */
+        .google-button {
+            background-color: white;
+            color: #333;
+            border: none;
+            padding: 5px 0px;
+            border-radius: 0px;
+            font-size: 16px;
+        }
+
+        input[type="text"] {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            flex: 1; /* 使输入框占据剩余空间 */
+        }
+        input:focus {
+            outline: none;
+        }
+
+        /* 百度搜索按钮样式 */
+        .baidu-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .baidu-button:hover {
+            background: #764ba2;
+        }
+
+        
+
+        /* 下部分样式 */
+        .bottom-section {
+            background-color: white;
+            height: 75vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="top-section">
+            <div class="search-bar">
+                <button id="googleButton" class="google-button">Go</button>
+                <input type="text" id="searchInput" placeholder="请输入搜索内容" autocomplete="off">
+                <button id="baidusearchButton" class="baidu-button">搜索</button>
+            </div>
+        </div>
+        <div class="bottom-section">
+            <p>这是页面的下部分，你可以在这里添加更多具体内容。</p>
+        </div>
+    </div>
+
+    <script>
+        // 获取页面中的按钮和搜索输入框元素
+        const baiduButton = document.getElementById('baidusearchButton');
+        const googleButton = document.getElementById('googleButton');
+        const searchInput = document.getElementById('searchInput');
+
+        // 执行搜索跳转
+        function performSearch(searchUrlPrefix, searchText) {
+            if (searchText.trim() !== '') {
+                const searchUrl = `${searchUrlPrefix}${encodeURIComponent(searchText)}`;
+                window.location.href = searchUrl;
+            }
+        }
+
+        // 添加事件监听器
+        baiduButton.addEventListener('click', () => {
+            performSearch('https://www.baidu.com/s?wd=', searchInput.value);
+        });
+
+        googleButton.addEventListener('click', () => {
+            performSearch('https://www.google.com/search?q=', searchInput.value);
+        });
+
+        searchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                performSearch('https://www.baidu.com/s?wd=', searchInput.value);
+            }
+        });
+    </script>
+</body>
+
+</html>
