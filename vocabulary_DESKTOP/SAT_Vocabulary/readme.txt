@@ -1,0 +1,2 @@
+<!-- The part of the wallpaper content reuses the code of the wallpaper content of Gabe and TIMAS. I would like to express my sincere gratitude for this. -->
+<!-- Automatically switch the words every minute, and click the upper right corner of the screen to manually switch the words. -->
