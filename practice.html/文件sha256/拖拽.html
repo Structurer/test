@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <style>
+        .drop-area {
+            border: 2px dashed #333;
+            padding: 50px;
+            text-align: center;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="drop-area" id="dropZone">
+        [文件] 拖拽到此处 计算SHA-256
+    </div>
+    <div id="result"></div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const resultDiv = document.getElementById('result');
+
+        // 拖拽事件处理
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.background = '#f0f0f0';
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            dropZone.style.background = '';
+        });
+
+        dropZone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            dropZone.style.background = '';
+            const files = e.dataTransfer.files;
+            if (files.length === 0) return;
+
+            resultDiv.textContent = '';
+            for (const file of files) {
+                try {
+                    const hash = await computeFileHash(file);
+                    resultDiv.innerHTML += `
+                        <div>
+                            <strong>${file.name}</strong> <br>${hash}<br>
+                        </div>
+                    `;
+                } catch (error) {
+                    resultDiv.innerHTML += `
+                        <div style="color: red;">${file.name} 失败：${error.message}</div>
+                    `;
+                }
+            }
+        });
+
+        // 哈希计算函数（同上）
+        async function computeFileHash(file) {
+            const fileBuffer = await file.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', fileBuffer);
+            return Array.from(new Uint8Array(hashBuffer))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+        }
+    </script>
+</body>
+</html>

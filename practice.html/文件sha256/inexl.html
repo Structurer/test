@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件哈希计算工具</title>
+    <style>
+        :root {
+            --primary-color: #2F80ED;
+            --secondary-color: #1A53AB;
+            --bg-color: #F5F7FA;
+            --white: #FFFFFF;
+            --gray-100: #F9FAFB;
+            --gray-200: #E5E7EB;
+            --gray-300: #D1D5DB;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            list-style: none;
+            text-decoration: none;
+        }
+
+        body {
+            background: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            background: var(--white);
+            width: 100%;
+            max-width: 650px;
+            padding: 3rem 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .header h1 {
+            font-size: 1.875rem;
+            color: var(--primary-color);
+            margin-bottom: 0.75rem;
+        }
+
+        .header p {
+            font-size: 1rem;
+            color: #6B7280;
+        }
+
+        .drag-drop-area {
+            border: 2px dashed var(--primary-color);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .drag-drop-area.dragover {
+            border-color: var(--secondary-color);
+            background: var(--gray-200);
+        }
+
+        .drag-drop-area .icon {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .drag-drop-area p {
+            font-size: 1.125rem;
+            color: #4B5563;
+            margin-bottom: 0.5rem;
+        }
+
+        .drag-drop-area small {
+            font-size: 0.875rem;
+            color: #6B7280;
+        }
+
+        .textarea-container {
+            margin-top: 1.5rem;
+        }
+
+        #textInput {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 120px;
+            transition: border-color 0.3s ease;
+        }
+
+        #textInput:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 2rem 0;
+        }
+
+        button {
+            padding: 0.875rem 2rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .calculate-btn {
+            background: var(--primary-color);
+            color: var(--white);
+        }
+
+        .calculate-btn:hover {
+            background: var(--secondary-color);
+        }
+
+        .clear-btn {
+            background: var(--gray-100);
+            color: #374151;
+        }
+
+        .clear-btn:hover {
+            background: var(--gray-200);
+        }
+
+        #result {
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 1.5rem;
+            font-size: 0.9375rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            color: #4B5563;
+        }
+
+        .result-title {
+            font-size: 1.125rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>文件 & 文本哈希计算</h1>
+            <p>支持拖拽文件或输入文本，快速生成 SHA-256 哈希值</p>
+        </div>
+
+        <div class="drag-drop-area" id="inputContainer" 
+             ondragover="handleDragOver(event)" 
+             ondrop="handleDrop(event)">
+            <div class="icon">📁</div>
+            <p>拖拽文件到此处</p>
+            <small>或</small>
+            <div class="textarea-container">
+                <textarea id="textInput" placeholder="输入文本（支持多行）"></textarea>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="calculate-btn" onclick="calculateHash()">计算哈希值</button>
+            <button class="clear-btn" onclick="clearAll()">清空内容</button>
+        </div>
+
+        <div id="result">
+            <p><strong>文件/文本：</strong> <br></p>
+            <p><strong>SHA-256值：</strong> <br></p> 
+            <!-- 结果自动填充 -->
+        </div>
+    </div>
+
+    <script>
+        // 沿用之前修复的 JavaScript 逻辑（保持不变）
+        const inputContainer = document.getElementById('inputContainer');
+        const textInput = document.getElementById('textInput');
+        const result = document.getElementById('result');
+
+        // 页面加载后初始化
+        document.addEventListener('DOMContentLoaded', clearAll);
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            inputContainer.classList.add('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            inputContainer.classList.remove('dragover');
+            textInput.value = '';
+            const files = e.dataTransfer?.files;
+            if (!files || files.length === 0) return;
+            processFiles(files);
+        }
+
+        async function calculateHash() {
+            result.textContent = '';
+            const textValue = textInput.value.trim();
+            if (textValue) {
+                try {
+                    const data = new TextEncoder().encode(textValue);
+                    const hash = await computeHash(data, '文本内容');
+                    result.innerHTML += `<p><strong>输入内容：</strong><br>${textValue}</p><p><strong>SHA-256值：</strong><br>${hash}</p>`;
+                } catch (error) {
+                    result.innerHTML += `<p style="color: #DC2626;">计算失败：${error.message}</p>`;
+                }
+            } else {
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.multiple = true;
+                fileInput.style.display = 'none';
+                fileInput.addEventListener('change', (e) => {
+                    processFiles(e.target.files);
+                    fileInput.remove();
+                });
+                document.body.appendChild(fileInput);
+                fileInput.click();
+            }
+        }
+
+        function processFiles(files) {
+            if (!files) return;
+            result.textContent = '';
+            Array.from(files).forEach(file => computeFileHash(file));
+        }
+
+        async function computeFileHash(file) {
+            try {
+                const buffer = await file.arrayBuffer();
+                const hash = await computeHash(buffer, file.name);
+                result.innerHTML += `<p><strong>文件名：</strong> <br>${file.name}</p><p><strong>SHA-256值：</strong> <br>${hash}</p>`;
+            } catch (error) {
+                result.innerHTML += `<p style="color: #DC2626;">文件 ${file.name} 失败：${error.message}</p>`;
+            }
+        }
+
+        async function computeHash(data, source) {
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(hashBuffer))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+        }
+
+        function clearAll() {
+            textInput.value = '';
+            result.innerHTML = '<p><strong>文件/文本：</strong> <br> </p><p><strong>SHA-256值：</strong> <br> </p>';
+            inputContainer.classList.remove('dragover');
+        }
+    </script>
+</body>
+</html>
