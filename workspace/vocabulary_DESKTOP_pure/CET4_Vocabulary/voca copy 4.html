@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词背诵助手（拼写验证版）</title>
+    <!-- 已单独引入CSS，此处无需重复 -->
+    <link rel="stylesheet" href="styles.css"> <!-- 替换为你的CSS文件路径/名称 -->
+</head>
+<body>
+    <div class="main-container">
+        <!-- 左侧单词列表区 -->
+        <div class="left-section" id="leftScrollArea">
+            <h1>📚 单词背诵助手</h1>
+            
+            <div class="control-bar">
+                <button class="btn" id="hideBtn">隐藏所有释义</button>
+                <button class="btn" id="showBtn">显示所有释义</button>
+                <button class="btn reset" id="shuffleBtn">随机打乱顺序</button>
+                <span class="word-count" id="count">共 <span>0</span> 个单词</span>
+            </div>
+
+            <div class="word-list" id="wordList"></div>
+        </div>
+
+        <!-- 右侧输入验证区 -->
+        <div class="right-section">
+            <div class="input-container">
+                <div class="input-title">✍️ 拼写单词</div>
+                <input type="text" class="word-input" id="wordInput" placeholder="输入左侧当前单词，按回车验证">
+                <div class="feedback" id="feedback"></div>
+                <div class="progress" id="progress">进度：0/0</div>
+                <button class="btn" id="nextBtn">下一个单词</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let words = [];
+        let currentIndex = 0; // 当前背诵单词索引
+        let shuffledWords = []; // 打乱后的单词数组
+        const leftScrollArea = document.getElementById('leftScrollArea');
+        let isAutoScroll = false; // 标记是否是程序自动滚动（避免与手动滚动冲突）
+        let scrollTimeout = null; // 滚动防抖计时器
+
+        // 加载JSON文件（核心：读取同文件夹下的Vocabulary.json）
+        fetch('Vocabulary.json')
+            .then(response => {
+                if (!response.ok) throw new Error('JSON文件加载失败，请确认文件存在且路径正确');
+                return response.json();
+            })
+            .then(data => {
+                words = data;
+                shuffledWords = [...words]; // 初始与原数组一致，打乱后更新
+                const countSpan = document.querySelector('#count span');
+                countSpan.textContent = words.length;
+                updateProgress();
+
+                // 渲染单词卡片
+                renderWords(shuffledWords);
+                // 激活第一个单词（居中+高亮）
+                activateCurrentWord();
+                // 绑定所有交互事件
+                bindEvents();
+            })
+            .catch(error => {
+                document.getElementById('wordList').innerHTML = `
+                    <div style="text-align: center; padding: 30px; color: #e53e3e;">
+                        ❌ ${error.message}
+                    </div>
+                `;
+            });
+
+        // 渲染所有单词卡片（支持多词性/多释义分行展示）
+        function renderWords(wordArray) {
+            const wordList = document.getElementById('wordList');
+            wordList.innerHTML = '';
+            wordArray.forEach((wordObj, index) => {
+                const card = document.createElement('div');
+                card.className = `word-card ${index === currentIndex ? 'active' : ''}`;
+                card.dataset.index = index;
+
+                // 中文意思+紧跟词性（每行一个意思+词性，避免竖向过长）
+                let translationsHtml = '<div class="translations-container">';
+                wordObj.translations.forEach(trans => {
+                    const meanings = trans.translation.split('；'); // 按分号拆分多释义
+                    meanings.forEach(mean => {
+                        translationsHtml += `
+                            <div class="translation-item">
+                                <span class="meaning">${mean.trim()}</span>
+                                <span class="pos-tag">${trans.type}</span>
+                            </div>
+                        `;
+                    });
+                });
+                translationsHtml += '</div>';
+
+                // 渲染常用短语（若有）
+                let phrasesHtml = '';
+                if (wordObj.phrases && wordObj.phrases.length > 0) {
+                    phrasesHtml = `
+                        <div class="phrases-title">常用短语：</div>
+                        <div class="phrase-list">
+                            ${wordObj.phrases.map(phrase => `
+                                <div class="phrase-item">
+                                    <span class="phrase-eng">${phrase.phrase}</span>
+                                    <span class="phrase-cn">${phrase.translation}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+
+                // 卡片完整HTML
+                card.innerHTML = `
+                    <div class="word-header">
+                        <div class="word">${wordObj.word}</div>
+                    </div>
+                    ${translationsHtml}
+                    ${phrasesHtml}
+                `;
+
+                // 点击释义项切换显示/隐藏
+                const transItems = card.querySelectorAll('.translation-item');
+                transItems.forEach(el => {
+                    el.addEventListener('click', () => {
+                        el.classList.toggle('hidden');
+                    });
+                });
+
+                wordList.appendChild(card);
+            });
+        }
+
+        // 激活当前单词（高亮+竖向居中滚动）
+        function activateCurrentWord() {
+            const cards = document.querySelectorAll('.word-card');
+            if (!cards[currentIndex]) return;
+
+            isAutoScroll = true; // 标记为程序自动滚动，避免触发手动滚动逻辑
+
+            // 高亮当前单词，取消其他卡片高亮
+            cards.forEach((card, index) => {
+                card.classList.toggle('active', index === currentIndex);
+            });
+
+            // 滚动到当前单词并竖向居中
+            cards[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // 清空输入框和反馈信息
+            document.getElementById('wordInput').value = '';
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+
+            // 自动滚动结束后重置标记（匹配滚动动画时长）
+            setTimeout(() => {
+                isAutoScroll = false;
+            }, 500);
+        }
+
+        // 更新进度显示（如：进度：3/10）
+        function updateProgress() {
+            const progressEl = document.getElementById('progress');
+            progressEl.textContent = `进度：${currentIndex + 1}/${shuffledWords.length}`;
+        }
+
+        // 验证输入的单词是否正确
+        function validateInput() {
+            const inputEl = document.getElementById('wordInput');
+            const feedbackEl = document.getElementById('feedback');
+            const inputValue = inputEl.value.trim().toLowerCase();
+            const currentWord = shuffledWords[currentIndex].word.toLowerCase();
+
+            if (inputValue === currentWord) {
+                feedbackEl.textContent = '✅ 拼写正确！';
+                feedbackEl.className = 'feedback correct';
+                // 延迟0.5秒自动跳转到下一个单词
+                setTimeout(() => {
+                    goToNextWord();
+                }, 500);
+            } else {
+                feedbackEl.textContent = '❌ 拼写错误，再试试！';
+                feedbackEl.className = 'feedback error';
+                inputEl.select(); // 选中输入内容，方便重新输入
+            }
+        }
+
+        // 跳转到下一个单词
+        function goToNextWord() {
+            if (currentIndex < shuffledWords.length - 1) {
+                currentIndex++;
+            } else {
+                // 所有单词背诵完成，提示后重置到第一个
+                document.getElementById('feedback').textContent = '🎉 所有单词背诵完成！';
+                document.getElementById('feedback').className = 'feedback correct';
+                setTimeout(() => {
+                    currentIndex = 0;
+                    activateCurrentWord();
+                    updateProgress();
+                }, 1500);
+                return;
+            }
+            activateCurrentWord();
+            updateProgress();
+        }
+
+        // 查找当前视图竖向居中的单词索引（手动滚动时用）
+        function findCenteredWordIndex() {
+            const cards = document.querySelectorAll('.word-card');
+            const scrollAreaRect = leftScrollArea.getBoundingClientRect();
+            const centerY = scrollAreaRect.top + scrollAreaRect.height / 2; // 视图中心Y坐标
+            let closestIndex = currentIndex;
+            let minDistance = Infinity;
+
+            // 遍历所有卡片，找到距离视图中心最近的单词
+            cards.forEach((card, index) => {
+                const cardRect = card.getBoundingClientRect();
+                const cardCenterY = cardRect.top + cardRect.height / 2;
+                const distance = Math.abs(cardCenterY - centerY);
+
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestIndex = index;
+                }
+            });
+
+            return closestIndex;
+        }
+
+        // 绑定所有交互事件
+        function bindEvents() {
+            const inputEl = document.getElementById('wordInput');
+            const nextBtn = document.getElementById('nextBtn');
+            const hideBtn = document.getElementById('hideBtn');
+            const showBtn = document.getElementById('showBtn');
+            const shuffleBtn = document.getElementById('shuffleBtn');
+
+            // 输入框按回车验证单词
+            inputEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    validateInput();
+                }
+            });
+
+            // 点击"下一个单词"按钮跳转
+            nextBtn.addEventListener('click', goToNextWord);
+
+            // 隐藏所有释义
+            hideBtn.addEventListener('click', () => {
+                document.querySelectorAll('.translation-item').forEach(el => el.classList.add('hidden'));
+            });
+
+            // 显示所有释义
+            showBtn.addEventListener('click', () => {
+                document.querySelectorAll('.translation-item').forEach(el => el.classList.remove('hidden'));
+            });
+
+            // 随机打乱单词顺序（重置当前索引到第一个）
+            shuffleBtn.addEventListener('click', () => {
+                shuffledWords = [...words].sort(() => Math.random() - 0.5);
+                currentIndex = 0;
+                renderWords(shuffledWords);
+                activateCurrentWord();
+                updateProgress();
+            });
+
+            // 核心：手动滚动左侧列表时，自动选中居中单词
+            leftScrollArea.addEventListener('scroll', () => {
+                // 忽略程序自动滚动的情况
+                if (isAutoScroll) return;
+
+                // 防抖处理：避免滚动时频繁触发（滚动停止后0.3秒执行）
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    const centeredIndex = findCenteredWordIndex();
+                    if (centeredIndex !== currentIndex) {
+                        currentIndex = centeredIndex;
+                        // 高亮新的居中单词，不触发滚动（避免循环）
+                        const cards = document.querySelectorAll('.word-card');
+                        cards.forEach((card, index) => {
+                            card.classList.toggle('active', index === currentIndex);
+                        });
+                        // 更新进度和输入框
+                        updateProgress();
+                        document.getElementById('wordInput').value = '';
+                        document.getElementById('feedback').textContent = '';
+                    }
+                }, 300);
+            });
+        }
+    </script>
+</body>
+</html>
