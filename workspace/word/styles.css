@@ -62,18 +62,14 @@ body {
     transition: all 0.3s;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
-/* 左列最新已牢记单词：第4行第4列（card-16）样式 */
+/* 左列最新已牢记单词：保持原有配色，词性标签统一 */
 .mastered-card.latest {
     background: #f0fdf4;
     border-color: #38a169;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 .mastered-card.latest .word-header {
-    color: #2d3748; /* 保持单词颜色清晰 */
-}
-.mastered-card.latest .pos-tag {
-    background: #38a169;
-    color: white;
+    color: #2d3748;
 }
 
 /* 中间列：待巩固单词区样式 */
@@ -90,16 +86,16 @@ body {
     border-bottom: 1px solid #eee;
     margin-bottom: 15px;
 }
-/* 中间列普通单词卡片：原右侧浅蓝色样式 */
+/* 中间列普通单词卡片：底色调淡（浅蓝→极浅蓝） */
 .word-card {
-    background: #e8f4f8;
-    border: 1px solid #bee3f8;
+    background: #f5fafe; /* 更淡的底色 */
+    border: 1px solid #e0eef7; /* 更浅的边框 */
     border-radius: 6px;
     padding: 15px;
     margin-bottom: 10px;
     transition: all 0.3s;
 }
-/* 中间列选中卡片：第5行第1列（card-17）样式 */
+/* 中间列选中卡片：保持原有配色，词性标签统一 */
 .word-card.active {
     background: #fefcbf;
     border: 1px solid #ed8936;
@@ -107,10 +103,6 @@ body {
 }
 .word-card.active .word-header {
     color: #2d3748;
-}
-.word-card.active .pos-tag {
-    background: #ed8936;
-    color: white;
 }
 
 /* 右列：待记忆单词区样式 */
@@ -130,7 +122,7 @@ body {
     transition: all 0.3s;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
-/* 右列最新待记忆单词：第2行第4列（card-8）样式 */
+/* 右列最新待记忆单词：保持原有配色，词性标签统一 */
 .untrained-card.latest {
     background: #faf0f5;
     border-color: #b794f4;
@@ -138,10 +130,6 @@ body {
 }
 .untrained-card.latest .word-header {
     color: #2d3748;
-}
-.untrained-card.latest .pos-tag {
-    background: #b794f4;
-    color: white;
 }
 
 /* 通用卡片样式 */
@@ -165,6 +153,7 @@ body {
 .translation-item.hidden .meaning {
     opacity: 0.3;
 }
+/* 所有词性标签统一样式（无额外差异化） */
 .pos-tag {
     background: #e8f4f8;
     color: #2b6cb0;
