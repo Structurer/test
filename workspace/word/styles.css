@@ -26,6 +26,7 @@ body {
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     overflow: hidden;
+    height: 100%; /* 确保三列高度一致 */
 }
 
 /* 左列：已牢记单词区样式 */
@@ -36,7 +37,6 @@ body {
     background: #fafafa; /* 轻微底色，区分列 */
 }
 .mastered-title,
-.review-section h1,
 .untrained-title {
     font-size: 20px;
     font-weight: bold;
@@ -46,7 +46,6 @@ body {
     border-bottom: 1px solid #eee;
 }
 .mastered-list,
-.word-list,
 .untrained-list {
     flex: 1;
     overflow-y: auto;
@@ -72,11 +71,28 @@ body {
     color: #2d3748;
 }
 
-/* 中间列：待巩固单词区样式 */
+/* 中间列：待巩固单词区核心样式（顶部固定，仅卡片滚动） */
 .review-section {
-    padding: 20px;
-    background: #f8f9fa; /* 轻微底色，突出中间列 */
+    display: flex;
+    flex-direction: column;
+    padding: 0; /* 取消默认内边距，避免滚动影响 */
 }
+/* 中间列顶部固定区域（标题+控制栏+反馈+进度） */
+.review-top-fixed {
+    padding: 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    position: sticky;
+    top: 0;
+    z-index: 10; /* 确保顶部在最上层，不被卡片遮挡 */
+}
+.review-top-fixed h1 {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 0 0 15px 0;
+    color: #2d3748;
+}
+/* 中间列控制栏 */
 .control-bar {
     padding: 0 0 15px 0;
     display: flex;
@@ -86,7 +102,18 @@ body {
     border-bottom: 1px solid #eee;
     margin-bottom: 15px;
 }
-/* 中间列普通单词卡片：浅淡黄色（比选中卡片浅） */
+/* 中间列独立卡片滚动区域 */
+.review-card-scroll {
+    flex: 1; /* 占满剩余高度 */
+    overflow-y: auto; /* 仅卡片区域滚动 */
+    padding: 20px;
+    background: #f8f9fa;
+}
+/* 中间列卡片容器 */
+#wordCardWrapper {
+    width: 100%;
+}
+/* 中间列普通单词卡片：浅淡黄色 */
 .word-card {
     background: #fffaf0; /* 浅淡黄色，柔和不刺眼 */
     border: 1px solid #ffe8cc; /* 对应浅黄边框 */
@@ -95,7 +122,7 @@ body {
     margin-bottom: 10px;
     transition: all 0.3s;
 }
-/* 中间列选中卡片：保持原有橙黄色调，形成深浅对比 */
+/* 中间列选中卡片：深黄色调，突出主体 */
 .word-card.active {
     background: #fefcbf;
     border: 1px solid #ed8936;
@@ -223,4 +250,21 @@ body {
     padding: 40px 20px;
     color: #666;
     font-size: 14px;
+}
+
+/* 滚动条样式优化（可选，提升体验） */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
