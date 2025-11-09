@@ -1,4 +1,4 @@
-/* 基础布局 */
+/* 基础布局 - 改为三列 */
 * {
     margin: 0;
     padding: 0;
@@ -15,7 +15,12 @@ body {
     height: 100vh;
     box-sizing: border-box;
 }
-.left-section, .right-section {
+/* 新增：最左侧列（占位/可后续扩展） */
+.leftmost-section,
+/* 中间列（原左侧列，单词背诵区） */
+.middle-section,
+/* 最右侧列（原右侧列，待复习区） */
+.right-section {
     flex: 1;
     background: #fff;
     border-radius: 8px;
@@ -23,8 +28,31 @@ body {
     overflow: hidden;
 }
 
-/* 左侧区域 */
-.left-section h1 {
+/* 最左侧列样式 */
+.leftmost-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: #f0f8fb;
+}
+.leftmost-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #2d3748;
+    margin-bottom: 20px;
+    text-align: center;
+}
+.leftmost-desc {
+    font-size: 14px;
+    color: #718096;
+    text-align: center;
+    line-height: 1.6;
+}
+
+/* 中间列（原左侧单词区）样式 */
+.middle-section h1 {
     padding: 20px;
     margin: 0;
     border-bottom: 1px solid #eee;
@@ -44,22 +72,24 @@ body {
     padding: 10px;
 }
 
-/* 单词卡片 */
+/* 单词卡片样式（中间列） */
 .word-card {
     background: #f8f9fa;
     border-radius: 6px;
     padding: 15px;
     margin-bottom: 10px;
-    transition: background 0.3s;
+    transition: all 0.3s;
 }
 .word-card.active {
-    background: #d4edda; /* 选中卡片为绿色 */
+    background: #d4edda; /* 选中卡片保持绿色，优化色调更柔和 */
     border: 1px solid #28a745;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.1);
 }
 .word-header {
     margin-bottom: 10px;
     font-size: 18px;
     font-weight: bold;
+    color: #2d3748;
 }
 .translations-container {
     display: flex;
@@ -71,18 +101,20 @@ body {
     align-items: center;
     gap: 8px;
     font-size: 14px;
+    color: #4a5568;
 }
 .translation-item.hidden .meaning {
     opacity: 0.3;
 }
 .pos-tag {
-    background: #e9ecef;
+    background: #e8f4f8;
+    color: #2b6cb0;
     padding: 2px 6px;
     border-radius: 4px;
     font-size: 12px;
 }
 
-/* 右侧待复习区 */
+/* 右侧待复习区样式 - 优化颜色 */
 .right-section .input-container {
     height: 100%;
     display: flex;
@@ -93,6 +125,7 @@ body {
     font-size: 18px;
     font-weight: bold;
     margin-bottom: 10px;
+    color: #2d3748;
 }
 .feedback {
     padding: 10px;
@@ -113,41 +146,50 @@ body {
     overflow-y: auto;
     padding: 10px 0;
 }
+/* 右侧普通待复习卡片：替换黄色为柔和的浅蓝色 */
 .review-card {
-    background: #fff3cd; /* 普通待复习卡片为浅黄色 */
+    background: #e8f4f8;
+    border: 1px solid #bee3f8;
     border-radius: 6px;
     padding: 15px;
     margin-bottom: 10px;
-    border: 1px solid #ffeeba;
     transition: all 0.3s;
 }
-/* 最新添加的待复习卡片（红色，突出区分） */
+/* 右侧最新待复习卡片：替换红色为清新的浅紫色 */
 .review-card.latest {
-    background: #fdf2f8;
-    border-color: #e53e3e;
-    box-shadow: 0 0 0 2px rgba(229, 62, 62, 0.1);
+    background: #faf0f5;
+    border-color: #d6bcfa;
+    box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.1);
 }
-/* 最新卡片的标题标红，进一步区分 */
+/* 最新卡片标题标紫，增强区分 */
 .review-card.latest .word-header {
-    color: #e53e3e;
+    color: #9f7aea;
 }
 
-/* 按钮样式 */
+/* 按钮样式优化 */
 .btn {
     padding: 6px 12px;
     border: none;
     border-radius: 4px;
-    background: #007bff;
+    background: #4299e1;
     color: #fff;
     cursor: pointer;
     font-size: 14px;
+    transition: background 0.3s;
+}
+.btn:hover {
+    background: #3182ce;
 }
 .btn:disabled {
     background: #6c757d;
     cursor: not-allowed;
+    opacity: 0.8;
 }
 .btn.reset {
     background: #dc3545;
+}
+.btn.reset:hover {
+    background: #c82333;
 }
 .word-count {
     font-size: 14px;
