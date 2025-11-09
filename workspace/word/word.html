@@ -3,169 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>单词背诵助手（快速切换版）</title>
-    <style>
-        /* 基础布局 */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: "微软雅黑", sans-serif;
-        }
-        body {
-            background: #f5f5f5;
-        }
-        .main-container {
-            display: flex;
-            gap: 20px;
-            padding: 20px;
-            height: 100vh;
-            box-sizing: border-box;
-        }
-        .left-section, .right-section {
-            flex: 1;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-
-        /* 左侧区域 */
-        .left-section h1 {
-            padding: 20px;
-            margin: 0;
-            border-bottom: 1px solid #eee;
-            font-size: 20px;
-        }
-        .control-bar {
-            padding: 10px 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border-bottom: 1px solid #eee;
-            flex-wrap: wrap;
-        }
-        .word-list {
-            height: calc(100% - 120px);
-            overflow-y: auto;
-            padding: 10px;
-        }
-
-        /* 单词卡片 */
-        .word-card {
-            background: #f8f9fa;
-            border-radius: 6px;
-            padding: 15px;
-            margin-bottom: 10px;
-            transition: background 0.3s;
-        }
-        .word-card.active {
-            background: #d4edda; /* 选中卡片为绿色 */
-            border: 1px solid #28a745;
-        }
-        .word-header {
-            margin-bottom: 10px;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .translations-container {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        .translation-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-        }
-        .translation-item.hidden .meaning {
-            opacity: 0.3;
-        }
-        .pos-tag {
-            background: #e9ecef;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-
-        /* 右侧待复习区 */
-        .right-section .input-container {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-        }
-        .input-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .feedback {
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-        .feedback.correct {
-            background: #d4edda;
-            color: #155724;
-        }
-        .feedback.error {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        .review-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px 0;
-        }
-        .review-card {
-            background: #fff3cd;
-            border-radius: 6px;
-            padding: 15px;
-            margin-bottom: 10px;
-            border: 1px solid #ffeeba;
-        }
-
-        /* 按钮样式 */
-        .btn {
-            padding: 6px 12px;
-            border: none;
-            border-radius: 4px;
-            background: #007bff;
-            color: #fff;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .btn:disabled {
-            background: #6c757d;
-            cursor: not-allowed;
-        }
-        .btn.reset {
-            background: #dc3545;
-        }
-        .word-count {
-            font-size: 14px;
-            color: #666;
-            margin-left: auto;
-        }
-    </style>
+    <title>单词背诵助手（三列分类版）</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="main-container">
-        <!-- 左侧单词列表区 -->
-        <div class="left-section" id="leftScrollArea">
-            <h1>📚 单词背诵助手</h1>
+        <!-- 左列：已牢记单词区（←键转移） -->
+        <div class="mastered-section">
+            <div class="mastered-title">✅ 已牢记</div>
+            <div class="mastered-list" id="masteredList">
+                <div class="empty-state">暂无已牢记单词<br>按←键将中间单词移至此处</div>
+            </div>
+        </div>
+
+        <!-- 中间列：待巩固单词区 -->
+        <div class="review-section" id="middleScrollArea">
+            <h1>📚 待巩固</h1>
             
             <div class="control-bar">
                 <button class="btn" id="hideBtn" disabled>隐藏所有释义</button>
                 <button class="btn" id="showBtn" disabled>显示所有释义</button>
                 <button class="btn reset" id="shuffleBtn" disabled>随机打乱顺序</button>
-                <span class="word-count" id="count">共 <span>0</span> 个单词</span>
+                <span class="word-count" id="count">待巩固：<span>0</span> 个</span>
             </div>
 
-            <!-- 加载提示容器 -->
+            <div class="feedback" id="feedback">←：移至已牢记 | ↑↓/空格/Enter：切换 | →：移至待记忆</div>
+            <div class="progress" id="progress">已牢记：0 个 | 待记忆：0 个</div>
+
             <div class="word-list" id="wordList">
                 <div style="text-align: center; padding: 80px 20px; color: #4299e1; font-size: 20px; line-height: 2;">
                     ⏳ 正在加载单词数据...<br>
@@ -174,16 +38,11 @@
             </div>
         </div>
 
-        <!-- 右侧待复习区 -->
-        <div class="right-section" id="rightSection">
-            <div class="input-container">
-                <div class="input-title">📌 待复习单词</div>
-                <div class="feedback" id="feedback">按空格/Enter/↓键切换单词，按→键移至此处</div>
-                <div class="progress" id="progress"> <br></div>
-                <!-- 右侧单词列表 -->
-                <div class="review-list" id="reviewList">
-                    <div style="text-align: center; padding: 40px 20px; color: #666;">暂无待复习单词</div>
-                </div>
+        <!-- 右列：待记忆单词区（→键转移） -->
+        <div class="untrained-section">
+            <div class="untrained-title">📝 待记忆</div>
+            <div class="untrained-list" id="untrainedList">
+                <div class="empty-state">暂无待记忆单词<br>按→键将中间单词移至此处</div>
             </div>
         </div>
     </div>
@@ -191,14 +50,20 @@
     <script>
         let words = [];
         let currentIndex = 0;
-        let shuffledWords = [];
-        let reviewWords = []; // 右侧待复习单词
-        const leftScrollArea = document.getElementById('leftScrollArea');
-        const reviewList = document.getElementById('reviewList');
+        let toReviewWords = []; // 中间列：待巩固单词
+        let masteredWords = []; // 左列：已牢记单词
+        let untrainedWords = []; // 右列：待记忆单词
+        // 标记两列最新添加的单词索引
+        let latestMasteredIndex = -1;
+        let latestUntrainedIndex = -1;
+
+        const middleScrollArea = document.getElementById('middleScrollArea');
+        const masteredList = document.getElementById('masteredList');
+        const untrainedList = document.getElementById('untrainedList');
         let isAutoScroll = false;
         let scrollTimeout = null;
 
-        // 加载JSON文件（请确保Vocabulary.json与当前文件同目录）
+        // 加载JSON文件
         fetch('Vocabulary.json')
             .then(response => {
                 if (!response.ok) throw new Error('文件不存在或路径错误');
@@ -206,12 +71,11 @@
             })
             .then(data => {
                 words = data;
-                shuffledWords = [...words];
-                const countSpan = document.querySelector('#count span');
-                countSpan.textContent = words.length;
-                document.getElementById('progress').textContent = `进度：1/${words.length}`;
-
-                renderWords(shuffledWords);
+                toReviewWords = [...words];
+                // 更新计数
+                updateCounts();
+                // 渲染中间列
+                renderToReviewWords(toReviewWords);
                 activateCurrentWord();
                 bindEvents();
                 enableAllControls();
@@ -229,18 +93,21 @@
                 document.getElementById('feedback').className = 'feedback error';
             });
 
-        // 渲染左侧单词卡片（移除常用短语）
-        function renderWords(wordArray) {
+        // 渲染中间列：待巩固单词
+        function renderToReviewWords(wordArray) {
             const wordList = document.getElementById('wordList');
             wordList.innerHTML = '';
-            const fragment = document.createDocumentFragment();
+            if (wordArray.length === 0) {
+                wordList.innerHTML = '<div class="empty-state">🎉 所有待巩固单词已分类完成！</div>';
+                return;
+            }
 
+            const fragment = document.createDocumentFragment();
             wordArray.forEach((wordObj, index) => {
                 const card = document.createElement('div');
                 card.className = `word-card ${index === currentIndex ? 'active' : ''}`;
                 card.dataset.index = index;
 
-                // 仅保留单词、释义、词性
                 let translationsHtml = '<div class="translations-container">';
                 wordObj.translations.forEach(trans => {
                     const meanings = trans.translation.split('；');
@@ -270,22 +137,24 @@
 
                 fragment.appendChild(card);
             });
-
             wordList.appendChild(fragment);
         }
 
-        // 渲染右侧待复习卡片（新增滚动到最底部逻辑）
-        function renderReviewWords() {
-            reviewList.innerHTML = '';
-            if (reviewWords.length === 0) {
-                reviewList.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #666;">暂无待复习单词</div>`;
+        // 渲染左列：已牢记单词（自动滚到底+最新标记）
+        function renderMasteredWords() {
+            masteredList.innerHTML = '';
+            if (masteredWords.length === 0) {
+                masteredList.innerHTML = '<div class="empty-state">暂无已牢记单词<br>按←键将中间单词移至此处</div>';
+                latestMasteredIndex = -1;
                 return;
             }
+
             const fragment = document.createDocumentFragment();
-            reviewWords.forEach(wordObj => {
+            masteredWords.forEach((wordObj, index) => {
                 const card = document.createElement('div');
-                card.className = 'review-card';
-                
+                card.className = `mastered-card ${index === latestMasteredIndex ? 'latest' : ''}`;
+                card.dataset.index = index;
+
                 let translationsHtml = '<div class="translations-container">';
                 wordObj.translations.forEach(trans => {
                     const meanings = trans.translation.split('；');
@@ -308,13 +177,58 @@
                 `;
                 fragment.appendChild(card);
             });
-            reviewList.appendChild(fragment);
+            masteredList.appendChild(fragment);
 
-            // 核心新增：自动滚动到右侧列表最底部
-            reviewList.scrollTop = reviewList.scrollHeight;
-            // 兼容部分浏览器，确保滚动生效
+            // 自动滚到底部
+            masteredList.scrollTop = masteredList.scrollHeight;
             setTimeout(() => {
-                reviewList.scrollTop = reviewList.scrollHeight;
+                masteredList.scrollTop = masteredList.scrollHeight;
+            }, 10);
+        }
+
+        // 渲染右列：待记忆单词（自动滚到底+最新标记）
+        function renderUntrainedWords() {
+            untrainedList.innerHTML = '';
+            if (untrainedWords.length === 0) {
+                untrainedList.innerHTML = '<div class="empty-state">暂无待记忆单词<br>按→键将中间单词移至此处</div>';
+                latestUntrainedIndex = -1;
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+            untrainedWords.forEach((wordObj, index) => {
+                const card = document.createElement('div');
+                card.className = `untrained-card ${index === latestUntrainedIndex ? 'latest' : ''}`;
+                card.dataset.index = index;
+
+                let translationsHtml = '<div class="translations-container">';
+                wordObj.translations.forEach(trans => {
+                    const meanings = trans.translation.split('；');
+                    meanings.forEach(mean => {
+                        translationsHtml += `
+                            <div class="translation-item">
+                                <span class="meaning">${mean.trim()}</span>
+                                <span class="pos-tag">${trans.type}</span>
+                            </div>
+                        `;
+                    });
+                });
+                translationsHtml += '</div>';
+
+                card.innerHTML = `
+                    <div class="word-header">
+                        <div class="word">${wordObj.word}</div>
+                    </div>
+                    ${translationsHtml}
+                `;
+                fragment.appendChild(card);
+            });
+            untrainedList.appendChild(fragment);
+
+            // 自动滚到底部
+            untrainedList.scrollTop = untrainedList.scrollHeight;
+            setTimeout(() => {
+                untrainedList.scrollTop = untrainedList.scrollHeight;
             }, 10);
         }
 
@@ -325,7 +239,7 @@
             document.getElementById('shuffleBtn').disabled = false;
         }
 
-        // 激活当前单词
+        // 激活当前单词（居中+高亮）
         function activateCurrentWord() {
             const cards = document.querySelectorAll('.word-card');
             if (!cards[currentIndex]) return;
@@ -334,100 +248,155 @@
             cards.forEach((card, index) => card.classList.toggle('active', index === currentIndex));
             cards[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            document.getElementById('feedback').textContent = '按空格/Enter/↓键切换单词，按→键移至待复习';
+            document.getElementById('feedback').textContent = '←：移至已牢记 | ↑↓/空格/Enter：切换 | →：移至待记忆';
             document.getElementById('feedback').className = 'feedback';
 
             setTimeout(() => isAutoScroll = false, 500);
         }
 
-        // 更新进度
-        function updateProgress() {
-            const progressEl = document.getElementById('progress');
-            progressEl.textContent = `进度：${currentIndex + 1}/${shuffledWords.length}`;
+        // 更新三列单词计数
+        function updateCounts() {
+            // 待巩固单词数
+            document.querySelector('#count span').textContent = toReviewWords.length;
+            // 已牢记+待记忆单词数
+            document.getElementById('progress').textContent = 
+                `已牢记：${masteredWords.length} 个 | 待记忆：${untrainedWords.length} 个`;
         }
 
-        // 切换下一个单词
-        function goToNextWord() {
-            if (currentIndex < shuffledWords.length - 1) {
-                currentIndex++;
-            } else {
-                document.getElementById('feedback').textContent = '🎉 所有单词背诵完成！';
-                document.getElementById('feedback').className = 'feedback correct';
-                setTimeout(() => {
-                    currentIndex = 0;
-                    activateCurrentWord();
-                    updateProgress();
-                }, 1500);
-                return;
+        // 切换中间列单词（上/下）
+        function switchWord(direction) {
+            if (toReviewWords.length === 0) return;
+
+            if (direction === 'up') {
+                currentIndex = Math.max(0, currentIndex - 1);
+            } else if (direction === 'down') {
+                currentIndex = Math.min(toReviewWords.length - 1, currentIndex + 1);
             }
             activateCurrentWord();
-            updateProgress();
         }
 
-        // 转移到右侧待复习
-        function moveToReview() {
-            const currentWord = shuffledWords[currentIndex];
-            reviewWords.push(currentWord);
-            // 从左侧移除当前单词
-            shuffledWords.splice(currentIndex, 1);
-            // 重新渲染左侧
-            renderWords(shuffledWords);
-            // 渲染右侧（自动滚动到底部）
-            renderReviewWords();
-            // 切换到下一个单词
-            currentIndex = currentIndex >= shuffledWords.length ? 0 : currentIndex;
-            activateCurrentWord();
-            updateProgress();
-            document.getElementById('feedback').textContent = '✅ 已移至待复习区';
+        // 移至左列：已牢记单词
+        function moveToMastered() {
+            if (toReviewWords.length === 0) return;
+
+            const currentWord = toReviewWords[currentIndex];
+            masteredWords.push(currentWord);
+            latestMasteredIndex = masteredWords.length - 1; // 标记最新已牢记单词
+
+            // 从中间列移除
+            toReviewWords.splice(currentIndex, 1);
+            // 调整当前索引（避免越界）
+            currentIndex = currentIndex >= toReviewWords.length ? Math.max(0, toReviewWords.length - 1) : currentIndex;
+
+            // 重新渲染三列
+            renderToReviewWords(toReviewWords);
+            renderMasteredWords();
+            updateCounts();
+
+            // 若中间列还有单词，保持激活
+            if (toReviewWords.length > 0) {
+                activateCurrentWord();
+            } else {
+                document.getElementById('feedback').textContent = '✅ 所有单词已分类，已牢记单词已更新';
+            }
         }
 
-        // 绑定事件
+        // 移至右列：待记忆单词
+        function moveToUntrained() {
+            if (toReviewWords.length === 0) return;
+
+            const currentWord = toReviewWords[currentIndex];
+            untrainedWords.push(currentWord);
+            latestUntrainedIndex = untrainedWords.length - 1; // 标记最新待记忆单词
+
+            // 从中间列移除
+            toReviewWords.splice(currentIndex, 1);
+            // 调整当前索引
+            currentIndex = currentIndex >= toReviewWords.length ? Math.max(0, toReviewWords.length - 1) : currentIndex;
+
+            // 重新渲染三列
+            renderToReviewWords(toReviewWords);
+            renderUntrainedWords();
+            updateCounts();
+
+            // 若中间列还有单词，保持激活
+            if (toReviewWords.length > 0) {
+                activateCurrentWord();
+            } else {
+                document.getElementById('feedback').textContent = '✅ 所有单词已分类，待记忆单词已更新';
+            }
+        }
+
+        // 打乱中间列待巩固单词
+        function shuffleToReviewWords() {
+            if (toReviewWords.length === 0) return;
+
+            toReviewWords = [...toReviewWords].sort(() => Math.random() - 0.5);
+            currentIndex = 0; // 重置当前索引到第一个
+
+            document.getElementById('wordList').innerHTML = `
+                <div style="text-align: center; padding: 80px 20px; color: #4299e1; font-size: 18px;">
+                    ⏳ 正在打乱单词顺序...
+                </div>
+            `;
+
+            setTimeout(() => {
+                renderToReviewWords(toReviewWords);
+                activateCurrentWord();
+                document.getElementById('feedback').textContent = '🔀 单词顺序已打乱';
+            }, 300);
+        }
+
+        // 绑定所有事件
         function bindEvents() {
             const hideBtn = document.getElementById('hideBtn');
             const showBtn = document.getElementById('showBtn');
             const shuffleBtn = document.getElementById('shuffleBtn');
 
-            // 键盘事件：空格/Enter/↓切换，→转移
+            // 键盘核心事件
             document.addEventListener('keydown', (e) => {
-                // 空格/Enter/下方向键 切换下一个
-                if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowDown') {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+                // 左方向键：移至已牢记单词区
+                if (e.key === 'ArrowLeft') {
                     e.preventDefault();
-                    goToNextWord();
+                    moveToMastered();
                 }
-                // 右方向键 转移到待复习
-                if (e.key === 'ArrowRight') {
+                // 右方向键：移至待记忆单词区
+                else if (e.key === 'ArrowRight') {
                     e.preventDefault();
-                    moveToReview();
+                    moveToUntrained();
+                }
+                // 上方向键：中间列上一个单词
+                else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    switchWord('up');
+                }
+                // 下方向键/空格/Enter：中间列下一个单词
+                else if (e.key === 'ArrowDown' || e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    switchWord('down');
                 }
             });
 
             // 按钮事件
-            hideBtn.addEventListener('click', () => document.querySelectorAll('.translation-item').forEach(el => el.classList.add('hidden')));
-            showBtn.addEventListener('click', () => document.querySelectorAll('.translation-item').forEach(el => el.classList.remove('hidden')));
-
-            // 打乱单词
-            shuffleBtn.addEventListener('click', () => {
-                shuffledWords = [...words].sort(() => Math.random() - 0.5);
-                currentIndex = 0;
-                document.getElementById('wordList').innerHTML = `
-                    <div style="text-align: center; padding: 80px 20px; color: #4299e1; font-size: 18px;">
-                        ⏳ 正在打乱单词顺序...
-                    </div>
-                `;
-                setTimeout(() => {
-                    renderWords(shuffledWords);
-                    activateCurrentWord();
-                    updateProgress();
-                }, 300);
+            hideBtn.addEventListener('click', () => {
+                document.querySelectorAll('.translation-item').forEach(el => el.classList.add('hidden'));
+                document.getElementById('feedback').textContent = '🙈 所有释义已隐藏';
             });
+            showBtn.addEventListener('click', () => {
+                document.querySelectorAll('.translation-item').forEach(el => el.classList.remove('hidden'));
+                document.getElementById('feedback').textContent = '👀 所有释义已显示';
+            });
+            shuffleBtn.addEventListener('click', shuffleToReviewWords);
 
-            // 滚动事件
-            leftScrollArea.addEventListener('scroll', () => {
+            // 中间列滚动事件：滚动后自动选中居中卡片
+            middleScrollArea.addEventListener('scroll', () => {
                 if (isAutoScroll) return;
                 clearTimeout(scrollTimeout);
                 scrollTimeout = setTimeout(() => {
                     const cards = document.querySelectorAll('.word-card');
-                    const scrollAreaRect = leftScrollArea.getBoundingClientRect();
+                    const scrollAreaRect = middleScrollArea.getBoundingClientRect();
                     const centerY = scrollAreaRect.top + scrollAreaRect.height / 2;
                     let closestIndex = currentIndex;
                     let minDistance = Infinity;
@@ -444,7 +413,6 @@
                     if (closestIndex !== currentIndex) {
                         currentIndex = closestIndex;
                         cards.forEach((card, index) => card.classList.toggle('active', index === currentIndex));
-                        updateProgress();
                     }
                 }, 300);
             });
