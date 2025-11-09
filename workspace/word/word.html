@@ -8,33 +8,30 @@
 </head>
 <body>
     <div class="main-container">
-        <!-- 左列：已牢记单词区 -->
+        <!-- 左列：已牢记单词区（计数整合到标题后） -->
         <div class="mastered-section">
-            <div class="mastered-title">✅ 已牢记</div>
+            <div class="mastered-title">✅ 已牢记 <span class="count-badge" id="masteredCount">0</span></div>
             <div class="mastered-list" id="masteredList">
                 <div class="empty-state">暂无已牢记单词<br>按←键将中间单词移至此处</div>
             </div>
         </div>
 
-        <!-- 中间列：待巩固单词区（顶部固定，仅卡片滚动） -->
+        <!-- 中间列：待巩固单词区（计数整合到标题后，删除重复计数行） -->
         <div class="review-section">
-            <!-- 顶部固定区域（永远不滚动） -->
+            <!-- 顶部固定区域（精简布局，无多余间隙） -->
             <div class="review-top-fixed">
-                <h1>📚 待巩固</h1>
+                <h1>📚 待巩固 <span class="count-badge" id="reviewCount">0</span></h1>
                 <div class="control-bar">
                     <button class="btn" id="hideBtn" disabled>隐藏所有释义</button>
                     <button class="btn" id="showBtn" disabled>显示所有释义</button>
                     <button class="btn reset" id="shuffleBtn" disabled>随机打乱顺序</button>
-                    <span class="word-count" id="count">待巩固：<span>0</span> 个</span>
                 </div>
                 <div class="feedback" id="feedback">←：移至已牢记 | ↑↓/空格/Enter：切换 | →：移至待记忆</div>
-                <div class="progress" id="progress">已牢记：0 个 | 待记忆：0 个</div>
             </div>
 
-            <!-- 独立卡片滚动区域（仅这里滚动，用div严格包裹） -->
+            <!-- 独立卡片滚动区域 -->
             <div class="review-card-scroll" id="reviewCardScroll">
                 <div id="wordCardWrapper">
-                    <!-- 所有卡片都在这个div里 -->
                     <div class="word-list" id="wordList">
                         <div style="text-align: center; padding: 80px 20px; color: #4299e1; font-size: 20px; line-height: 2;">
                             ⏳ 正在加载单词数据...<br>
@@ -45,9 +42,9 @@
             </div>
         </div>
 
-        <!-- 右列：待记忆单词区 -->
+        <!-- 右列：待记忆单词区（计数整合到标题后） -->
         <div class="untrained-section">
-            <div class="untrained-title">📝 待记忆</div>
+            <div class="untrained-title">📝 待记忆 <span class="count-badge" id="untrainedCount">0</span></div>
             <div class="untrained-list" id="untrainedList">
                 <div class="empty-state">暂无待记忆单词<br>按→键将中间单词移至此处</div>
             </div>
@@ -63,10 +60,13 @@
         let latestMasteredIndex = -1;
         let latestUntrainedIndex = -1;
 
-        // 关键：滚动容器直接指向卡片滚动区
         const reviewCardScroll = document.getElementById('reviewCardScroll');
         const masteredList = document.getElementById('masteredList');
         const untrainedList = document.getElementById('untrainedList');
+        // 计数元素
+        const masteredCountEl = document.getElementById('masteredCount');
+        const reviewCountEl = document.getElementById('reviewCount');
+        const untrainedCountEl = document.getElementById('untrainedCount');
         let isAutoScroll = false;
         let scrollTimeout = null;
 
@@ -79,7 +79,7 @@
             .then(data => {
                 words = data;
                 toReviewWords = [...words];
-                updateCounts();
+                updateCounts(); // 初始化计数
                 renderToReviewWords(toReviewWords);
                 activateCurrentWord();
                 bindEvents();
@@ -98,7 +98,7 @@
                 document.getElementById('feedback').className = 'feedback error';
             });
 
-        // 渲染中间列卡片（所有卡片都在wordList里，被scroll容器包裹）
+        // 渲染中间列卡片
         function renderToReviewWords(wordArray) {
             const wordList = document.getElementById('wordList');
             wordList.innerHTML = '';
@@ -240,14 +240,13 @@
             document.getElementById('shuffleBtn').disabled = false;
         }
 
-        // 激活当前单词（滚动目标是卡片滚动区）
+        // 激活当前单词
         function activateCurrentWord() {
             const cards = document.querySelectorAll('.word-card');
             if (!cards[currentIndex]) return;
 
             isAutoScroll = true;
             cards.forEach((card, index) => card.classList.toggle('active', index === currentIndex));
-            // 让卡片在滚动容器中居中
             cards[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             document.getElementById('feedback').textContent = '←：移至已牢记 | ↑↓/空格/Enter：切换 | →：移至待记忆';
@@ -256,11 +255,11 @@
             setTimeout(() => isAutoScroll = false, 500);
         }
 
-        // 更新计数
+        // 更新三列计数（整合到标题后，删除重复行）
         function updateCounts() {
-            document.querySelector('#count span').textContent = toReviewWords.length;
-            document.getElementById('progress').textContent = 
-                `已牢记：${masteredWords.length} 个 | 待记忆：${untrainedWords.length} 个`;
+            masteredCountEl.textContent = masteredWords.length;
+            reviewCountEl.textContent = toReviewWords.length;
+            untrainedCountEl.textContent = untrainedWords.length;
         }
 
         // 切换单词
@@ -288,7 +287,7 @@
 
             renderToReviewWords(toReviewWords);
             renderMasteredWords();
-            updateCounts();
+            updateCounts(); // 更新计数
 
             if (toReviewWords.length > 0) {
                 activateCurrentWord();
@@ -310,7 +309,7 @@
 
             renderToReviewWords(toReviewWords);
             renderUntrainedWords();
-            updateCounts();
+            updateCounts(); // 更新计数
 
             if (toReviewWords.length > 0) {
                 activateCurrentWord();
@@ -339,7 +338,7 @@
             }, 300);
         }
 
-        // 绑定事件（滚动事件监听卡片滚动区）
+        // 绑定事件
         function bindEvents() {
             const hideBtn = document.getElementById('hideBtn');
             const showBtn = document.getElementById('showBtn');
@@ -375,7 +374,7 @@
             });
             shuffleBtn.addEventListener('click', shuffleToReviewWords);
 
-            // 滚动事件：监听独立的卡片滚动区
+            // 滚动事件
             reviewCardScroll.addEventListener('scroll', () => {
                 if (isAutoScroll) return;
                 clearTimeout(scrollTimeout);
