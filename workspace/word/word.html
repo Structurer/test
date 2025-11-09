@@ -8,7 +8,7 @@
 </head>
 <body>
     <div class="main-container">
-        <!-- 左列：已牢记单词区（计数整合到标题后） -->
+        <!-- 左列：已牢记单词区（释义不参与隐藏/显示） -->
         <div class="mastered-section">
             <div class="mastered-title">✅ 已牢记 <span class="count-badge" id="masteredCount">0</span></div>
             <div class="mastered-list" id="masteredList">
@@ -16,9 +16,8 @@
             </div>
         </div>
 
-        <!-- 中间列：待巩固单词区（计数整合到标题后，删除重复计数行） -->
+        <!-- 中间列：待巩固单词区（仅此处释义受控制） -->
         <div class="review-section">
-            <!-- 顶部固定区域（精简布局，无多余间隙） -->
             <div class="review-top-fixed">
                 <h1>📚 待巩固 <span class="count-badge" id="reviewCount">0</span></h1>
                 <div class="control-bar">
@@ -29,7 +28,6 @@
                 <div class="feedback" id="feedback">←：移至已牢记 | ↑↓/空格/Enter：切换 | →：移至待记忆</div>
             </div>
 
-            <!-- 独立卡片滚动区域 -->
             <div class="review-card-scroll" id="reviewCardScroll">
                 <div id="wordCardWrapper">
                     <div class="word-list" id="wordList">
@@ -42,7 +40,7 @@
             </div>
         </div>
 
-        <!-- 右列：待记忆单词区（计数整合到标题后） -->
+        <!-- 右列：待记忆单词区（释义不参与隐藏/显示） -->
         <div class="untrained-section">
             <div class="untrained-title">📝 待记忆 <span class="count-badge" id="untrainedCount">0</span></div>
             <div class="untrained-list" id="untrainedList">
@@ -54,16 +52,16 @@
     <script>
         let words = [];
         let currentIndex = 0;
-        let toReviewWords = []; // 中间列：待巩固单词
-        let masteredWords = []; // 左列：已牢记单词
-        let untrainedWords = []; // 右列：待记忆单词
+        let toReviewWords = [];
+        let masteredWords = [];
+        let untrainedWords = [];
         let latestMasteredIndex = -1;
         let latestUntrainedIndex = -1;
+        let isMiddleTranslationHidden = false; // 记录中间列释义隐藏状态（全局保持）
 
         const reviewCardScroll = document.getElementById('reviewCardScroll');
         const masteredList = document.getElementById('masteredList');
         const untrainedList = document.getElementById('untrainedList');
-        // 计数元素
         const masteredCountEl = document.getElementById('masteredCount');
         const reviewCountEl = document.getElementById('reviewCount');
         const untrainedCountEl = document.getElementById('untrainedCount');
@@ -79,7 +77,7 @@
             .then(data => {
                 words = data;
                 toReviewWords = [...words];
-                updateCounts(); // 初始化计数
+                updateCounts();
                 renderToReviewWords(toReviewWords);
                 activateCurrentWord();
                 bindEvents();
@@ -98,7 +96,7 @@
                 document.getElementById('feedback').className = 'feedback error';
             });
 
-        // 渲染中间列卡片
+        // 渲染中间列卡片（根据全局状态设置释义显示/隐藏）
         function renderToReviewWords(wordArray) {
             const wordList = document.getElementById('wordList');
             wordList.innerHTML = '';
@@ -109,43 +107,20 @@
 
             const fragment = document.createDocumentFragment();
             wordArray.forEach((wordObj, index) => {
-                const card = document.createElement('div');
-                card.className = `word-card ${index === currentIndex ? 'active' : ''}`;
-                card.dataset.index = index;
-
-                let translationsHtml = '<div class="translations-container">';
-                wordObj.translations.forEach(trans => {
-                    const meanings = trans.translation.split('；');
-                    meanings.forEach(mean => {
-                        translationsHtml += `
-                            <div class="translation-item">
-                                <span class="meaning">${mean.trim()}</span>
-                                <span class="pos-tag">${trans.type}</span>
-                            </div>
-                        `;
-                    });
-                });
-                translationsHtml += '</div>';
-
-                card.innerHTML = `
-                    <div class="word-header">
-                        <div class="word">${wordObj.word}</div>
-                    </div>
-                    ${translationsHtml}
-                `;
-
-                // 释义显示/隐藏
-                const transItems = card.querySelectorAll('.translation-item');
-                transItems.forEach(el => {
-                    el.addEventListener('click', () => el.classList.toggle('hidden'));
-                });
-
+                const card = createWordCard(wordObj, index === currentIndex, 'word-card', false, true);
                 fragment.appendChild(card);
             });
             wordList.appendChild(fragment);
+
+            // 渲染后根据全局状态更新释义显示
+            if (isMiddleTranslationHidden) {
+                hideMiddleTranslations();
+            } else {
+                showMiddleTranslations();
+            }
         }
 
-        // 渲染左列：已牢记单词
+        // 渲染左列：已牢记单词（释义始终显示，不受控制）
         function renderMasteredWords() {
             masteredList.innerHTML = '';
             if (masteredWords.length === 0) {
@@ -156,30 +131,8 @@
 
             const fragment = document.createDocumentFragment();
             masteredWords.forEach((wordObj, index) => {
-                const card = document.createElement('div');
-                card.className = `mastered-card ${index === latestMasteredIndex ? 'latest' : ''}`;
-                card.dataset.index = index;
-
-                let translationsHtml = '<div class="translations-container">';
-                wordObj.translations.forEach(trans => {
-                    const meanings = trans.translation.split('；');
-                    meanings.forEach(mean => {
-                        translationsHtml += `
-                            <div class="translation-item">
-                                <span class="meaning">${mean.trim()}</span>
-                                <span class="pos-tag">${trans.type}</span>
-                            </div>
-                        `;
-                    });
-                });
-                translationsHtml += '</div>';
-
-                card.innerHTML = `
-                    <div class="word-header">
-                        <div class="word">${wordObj.word}</div>
-                    </div>
-                    ${translationsHtml}
-                `;
+                // 最后一个参数传false：不参与中间列的隐藏/显示控制
+                const card = createWordCard(wordObj, false, 'mastered-card', index === latestMasteredIndex, false);
                 fragment.appendChild(card);
             });
             masteredList.appendChild(fragment);
@@ -189,7 +142,7 @@
             }, 10);
         }
 
-        // 渲染右列：待记忆单词
+        // 渲染右列：待记忆单词（释义始终显示，不受控制）
         function renderUntrainedWords() {
             untrainedList.innerHTML = '';
             if (untrainedWords.length === 0) {
@@ -200,30 +153,8 @@
 
             const fragment = document.createDocumentFragment();
             untrainedWords.forEach((wordObj, index) => {
-                const card = document.createElement('div');
-                card.className = `untrained-card ${index === latestUntrainedIndex ? 'latest' : ''}`;
-                card.dataset.index = index;
-
-                let translationsHtml = '<div class="translations-container">';
-                wordObj.translations.forEach(trans => {
-                    const meanings = trans.translation.split('；');
-                    meanings.forEach(mean => {
-                        translationsHtml += `
-                            <div class="translation-item">
-                                <span class="meaning">${mean.trim()}</span>
-                                <span class="pos-tag">${trans.type}</span>
-                            </div>
-                        `;
-                    });
-                });
-                translationsHtml += '</div>';
-
-                card.innerHTML = `
-                    <div class="word-header">
-                        <div class="word">${wordObj.word}</div>
-                    </div>
-                    ${translationsHtml}
-                `;
+                // 最后一个参数传false：不参与中间列的隐藏/显示控制
+                const card = createWordCard(wordObj, false, 'untrained-card', index === latestUntrainedIndex, false);
                 fragment.appendChild(card);
             });
             untrainedList.appendChild(fragment);
@@ -231,6 +162,46 @@
             setTimeout(() => {
                 untrainedList.scrollTop = untrainedList.scrollHeight;
             }, 10);
+        }
+
+        // 通用创建单词卡片函数
+        // isControlled：是否受中间列隐藏/显示控制（仅中间列卡片为true）
+        function createWordCard(wordObj, isActive, cardClass = 'word-card', isLatest = false, isControlled = false) {
+            const card = document.createElement('div');
+            card.className = `${cardClass} ${isActive ? 'active' : ''} ${isLatest ? 'latest' : ''}`;
+            // 给受控制的卡片添加标识
+            if (isControlled) card.dataset.controlled = 'true';
+
+            let translationsHtml = '<div class="translations-container">';
+            wordObj.translations.forEach(trans => {
+                const meanings = trans.translation.split('；');
+                meanings.forEach(mean => {
+                    translationsHtml += `
+                        <div class="translation-item ${isControlled && isMiddleTranslationHidden ? 'hidden' : ''}">
+                            <span class="meaning">${mean.trim()}</span>
+                            <span class="pos-tag">${trans.type}</span>
+                        </div>
+                    `;
+                });
+            });
+            translationsHtml += '</div>';
+
+            card.innerHTML = `
+                <div class="word-header">
+                    <div class="word">${wordObj.word}</div>
+                </div>
+                ${translationsHtml}
+            `;
+
+            // 单个释义点击切换（仅受控制的卡片生效）
+            if (isControlled) {
+                const transItems = card.querySelectorAll('.translation-item');
+                transItems.forEach(el => {
+                    el.addEventListener('click', () => el.classList.toggle('hidden'));
+                });
+            }
+
+            return card;
         }
 
         // 启用控件
@@ -255,14 +226,14 @@
             setTimeout(() => isAutoScroll = false, 500);
         }
 
-        // 更新三列计数（整合到标题后，删除重复行）
+        // 更新三列计数
         function updateCounts() {
             masteredCountEl.textContent = masteredWords.length;
             reviewCountEl.textContent = toReviewWords.length;
             untrainedCountEl.textContent = untrainedWords.length;
         }
 
-        // 切换单词
+        // 切换单词（不重置释义隐藏状态）
         function switchWord(direction) {
             if (toReviewWords.length === 0) return;
 
@@ -271,6 +242,8 @@
             } else if (direction === 'down') {
                 currentIndex = Math.min(toReviewWords.length - 1, currentIndex + 1);
             }
+            // 重新渲染但保持隐藏状态
+            renderToReviewWords(toReviewWords);
             activateCurrentWord();
         }
 
@@ -287,7 +260,7 @@
 
             renderToReviewWords(toReviewWords);
             renderMasteredWords();
-            updateCounts(); // 更新计数
+            updateCounts();
 
             if (toReviewWords.length > 0) {
                 activateCurrentWord();
@@ -309,7 +282,7 @@
 
             renderToReviewWords(toReviewWords);
             renderUntrainedWords();
-            updateCounts(); // 更新计数
+            updateCounts();
 
             if (toReviewWords.length > 0) {
                 activateCurrentWord();
@@ -338,6 +311,22 @@
             }, 300);
         }
 
+        // 隐藏中间列所有释义（完全透明，仅中间列）
+        function hideMiddleTranslations() {
+            isMiddleTranslationHidden = true;
+            const middleTransItems = document.querySelectorAll('[data-controlled="true"] .translation-item');
+            middleTransItems.forEach(el => el.classList.add('hidden'));
+            document.getElementById('feedback').textContent = '🙈 中间列释义已隐藏';
+        }
+
+        // 显示中间列所有释义（仅中间列）
+        function showMiddleTranslations() {
+            isMiddleTranslationHidden = false;
+            const middleTransItems = document.querySelectorAll('[data-controlled="true"] .translation-item');
+            middleTransItems.forEach(el => el.classList.remove('hidden'));
+            document.getElementById('feedback').textContent = '👀 中间列释义已显示';
+        }
+
         // 绑定事件
         function bindEvents() {
             const hideBtn = document.getElementById('hideBtn');
@@ -363,15 +352,9 @@
                 }
             });
 
-            // 按钮事件
-            hideBtn.addEventListener('click', () => {
-                document.querySelectorAll('.translation-item').forEach(el => el.classList.add('hidden'));
-                document.getElementById('feedback').textContent = '🙈 所有释义已隐藏';
-            });
-            showBtn.addEventListener('click', () => {
-                document.querySelectorAll('.translation-item').forEach(el => el.classList.remove('hidden'));
-                document.getElementById('feedback').textContent = '👀 所有释义已显示';
-            });
+            // 按钮事件：仅控制中间列
+            hideBtn.addEventListener('click', hideMiddleTranslations);
+            showBtn.addEventListener('click', showMiddleTranslations);
             shuffleBtn.addEventListener('click', shuffleToReviewWords);
 
             // 滚动事件
@@ -396,7 +379,7 @@
 
                     if (closestIndex !== currentIndex) {
                         currentIndex = closestIndex;
-                        cards.forEach((card, index) => card.classList.toggle('active', index === currentIndex));
+                        renderToReviewWords(toReviewWords); // 重新渲染仍保持隐藏状态
                     }
                 }, 300);
             });

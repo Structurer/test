@@ -1,0 +1,272 @@
+/* 基础布局 - 三列等宽 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "微软雅黑", sans-serif;
+}
+body {
+    background: #f5f5f5;
+}
+.main-container {
+    display: flex; /* 开启弹性布局，子元素（三列）横向排列 */
+    gap: 20px; /* 三列之间的间距（可调整） */
+    padding: 20px;
+    height: 100vh;
+    box-sizing: border-box;
+}
+/* 左列：已牢记单词区 */
+.mastered-section,
+/* 中间列：待巩固单词区 */
+.review-section,
+/* 右列：待记忆单词区 */
+.untrained-section {
+    flex: 1; /* 核心宽度控制：三列等分剩余空间，总宽度完全一致 */
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow: hidden;
+    height: 100%; /* 确保三列高度一致 */
+    padding: 20px; /* 统一三列外层内边距，消除视觉差根源 */
+}
+
+/* 左列：已牢记单词区样式 */
+.mastered-section {
+    display: flex;
+    flex-direction: column;
+    background: #fafafa; /* 轻微底色，区分列 */
+}
+.mastered-title,
+.untrained-title {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 0 0 15px 0;
+    color: #2d3748;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+/* 计数徽章样式（融入标题，与原风格一致） */
+.count-badge {
+    font-size: 16px;
+    color: #4299e1;
+    font-weight: normal;
+    background: #f0f8fb;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+}
+.mastered-list,
+.untrained-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 0;
+    /* 隐藏滚动条 - 兼容所有浏览器 */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+/* 隐藏滚动条 - 兼容Chrome/Safari */
+.mastered-list::-webkit-scrollbar,
+.untrained-list::-webkit-scrollbar {
+    display: none;
+}
+/* 左列普通已牢记单词：白色 */
+.mastered-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 15px; /* 统一所有卡片内边距 */
+    margin-bottom: 10px;
+    transition: background 0.3s, border 0.3s, box-shadow 0.3s;
+}
+/* 左列最新已牢记单词：保持原有配色 */
+.mastered-card.latest {
+    background: #f0fdf4;
+    border-color: #38a169;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.mastered-card.latest .word-header {
+    color: #2d3748;
+}
+
+/* 中间列：待巩固单词区核心样式（顶部固定，仅卡片滚动） */
+.review-section {
+    display: flex;
+    flex-direction: column;
+    background: #f8f9fa; /* 中间列底色，与左右列区分 */
+}
+/* 中间列顶部固定区域（标题+控制栏+反馈） */
+.review-top-fixed {
+    padding: 0 0 15px 0; /* 取消顶部额外内边距，与左右列标题对齐 */
+    border-bottom: 1px solid #eee;
+    margin-bottom: 15px;
+}
+.review-top-fixed h1 {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 0 0 15px 0;
+    color: #2d3748;
+}
+/* 中间列标题计数徽章适配 */
+.review-top-fixed h1 .count-badge {
+    font-size: 16px;
+}
+/* 中间列控制栏 */
+.control-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+/* 中间列独立卡片滚动区域 */
+.review-card-scroll {
+    flex: 1; /* 占满剩余高度 */
+    overflow-y: auto; /* 仅卡片区域滚动 */
+    padding: 10px 0; /* 与左右列列表内边距统一，不额外挤压宽度 */
+    /* 隐藏滚动条 - 兼容所有浏览器 */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+/* 隐藏滚动条 - 兼容Chrome/Safari */
+.review-card-scroll::-webkit-scrollbar {
+    display: none;
+}
+/* 中间列卡片容器 */
+#wordCardWrapper {
+    width: 100%;
+}
+/* 中间列普通单词卡片：极淡蓝 */
+.word-card {
+    background: #f5fafe;
+    border: 1px solid #e0eef7;
+    border-radius: 6px;
+    padding: 15px; /* 统一所有卡片内边距，与左右列一致 */
+    margin-bottom: 10px;
+    transition: background 0.3s, border 0.3s, box-shadow 0.3s;
+}
+/* 中间列选中卡片：透亮浅蓝（纯蓝无绿调） */
+.word-card.active {
+    background: #e0f2fe;
+    border: 1px solid #7dd3fc;
+    box-shadow: 0 2px 6px rgba(56, 189, 248, 0.15);
+}
+.word-card.active .word-header {
+    color: #2d3748;
+}
+
+/* 右列：待记忆单词区样式 */
+.untrained-section {
+    display: flex;
+    flex-direction: column;
+    background: #fafafa; /* 与左列统一底色 */
+}
+/* 右列普通待记忆单词：白色 */
+.untrained-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 15px; /* 统一所有卡片内边距 */
+    margin-bottom: 10px;
+    transition: background 0.3s, border 0.3s, box-shadow 0.3s;
+}
+/* 右列最新待记忆单词：保持原有配色 */
+.untrained-card.latest {
+    background: #faf0f5;
+    border-color: #b794f4;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.untrained-card.latest .word-header {
+    color: #2d3748;
+}
+
+/* 通用卡片样式 */
+.word-header {
+    margin-bottom: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #2d3748;
+}
+.translations-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.translation-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+/* 核心：中间列仅隐藏释义文字（保留词性标签），秒生效 */
+[data-controlled="true"] .translation-item .meaning.hidden {
+    display: none; /* 不渲染释义文字，速度最快 */
+}
+/* 中间列词性标签始终显示，确保卡片高度不变 */
+[data-controlled="true"] .translation-item .pos-tag {
+    display: inline-block;
+}
+/* 左右列释义文字+词性均不受影响，始终显示 */
+.mastered-card .translation-item .meaning.hidden,
+.untrained-card .translation-item .meaning.hidden {
+    display: inline; /* 强制显示 */
+}
+/* 所有词性标签统一样式 */
+.pos-tag {
+    background: #e8f4f8;
+    color: #2b6cb0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+.meaning {
+    color: #4a5568;
+}
+
+/* 反馈和进度样式 */
+.feedback {
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 0; /* 取消底部额外间距，与卡片对齐 */
+    font-size: 14px;
+}
+.feedback.correct {
+    background: #d4edda;
+    color: #155724;
+}
+.feedback.error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* 按钮样式 */
+.btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    background: #4299e1;
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s;
+}
+.btn:hover {
+    background: #3182ce;
+}
+.btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+.btn.reset {
+    background: #dc3545;
+}
+.btn.reset:hover {
+    background: #c82333;
+}
+
+/* 空状态样式 */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+    font-size: 14px;
+}

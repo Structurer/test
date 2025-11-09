@@ -60,6 +60,14 @@ body {
     flex: 1;
     overflow-y: auto;
     padding: 10px 0;
+    /* 隐藏滚动条 - 兼容Chrome/Safari */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+/* 隐藏滚动条 - 兼容Chrome/Safari */
+.mastered-list::-webkit-scrollbar,
+.untrained-list::-webkit-scrollbar {
+    display: none;
 }
 /* 左列普通已牢记单词：白色 */
 .mastered-card {
@@ -122,25 +130,32 @@ body {
     overflow-y: auto; /* 仅卡片区域滚动 */
     padding: 20px;
     background: #f8f9fa;
+    /* 隐藏滚动条 - 兼容所有浏览器 */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+/* 隐藏滚动条 - 兼容Chrome/Safari */
+.review-card-scroll::-webkit-scrollbar {
+    display: none;
 }
 /* 中间列卡片容器 */
 #wordCardWrapper {
     width: 100%;
 }
-/* 中间列普通单词卡片：保持当前优质极淡蓝 */
+/* 中间列普通单词卡片：极淡蓝（已确认良好） */
 .word-card {
-    background: #f5fafe; /* 已确认良好，不改动 */
+    background: #f5fafe;
     border: 1px solid #e0eef7;
     border-radius: 6px;
     padding: 15px;
     margin-bottom: 10px;
     transition: all 0.3s;
 }
-/* 中间列选中卡片：透亮浅蓝（比当前重，纯蓝无绿调） */
+/* 中间列选中卡片：透亮浅蓝（纯蓝无绿调） */
 .word-card.active {
-    background: #e0f2fe; /* 透亮浅蓝，蓝色更纯，无绿调，比当前重但不厚重 */
-    border: 1px solid #7dd3fc; /* 对应浅蓝边框，强化蓝色质感 */
-    box-shadow: 0 2px 6px rgba(56, 189, 248, 0.15); /* 透亮蓝阴影，增强通透感 */
+    background: #e0f2fe;
+    border: 1px solid #7dd3fc;
+    box-shadow: 0 2px 6px rgba(56, 189, 248, 0.15);
 }
 .word-card.active .word-header {
     color: #2d3748;
@@ -190,9 +205,18 @@ body {
     align-items: center;
     gap: 8px;
     font-size: 14px;
+    transition: opacity 0.3s; /* 平滑过渡 */
 }
-.translation-item.hidden .meaning {
-    opacity: 0.3;
+/* 关键：中间列隐藏释义→完全透明（与底色融合） */
+[data-controlled="true"] .translation-item.hidden {
+    opacity: 0; /* 完全透明，不是变浅 */
+    pointer-events: none; /* 隐藏后不响应点击 */
+}
+/* 左右列释义始终显示，不受hidden类影响 */
+.mastered-card .translation-item.hidden,
+.untrained-card .translation-item.hidden {
+    opacity: 1;
+    pointer-events: auto;
 }
 /* 所有词性标签统一样式 */
 .pos-tag {
@@ -254,21 +278,4 @@ body {
     padding: 40px 20px;
     color: #666;
     font-size: 14px;
-}
-
-/* 滚动条样式优化（提升体验） */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-}
-::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
 }

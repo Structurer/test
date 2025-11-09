@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词背诵助手（三列分类版）</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- 初始化首页的内联样式 -->
+    <style>
+        .init-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        .init-screen h1 {
+            font-size: 36px;
+            color: #4299e1;
+            margin-bottom: 20px;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+        .init-screen p {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 40px;
+            text-align: center;
+            padding: 0 20px;
+            max-width: 600px;
+        }
+        .init-screen .start-btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            background-color: #4299e1;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 2px 8px rgba(66, 153, 225, 0.2);
+        }
+        .init-screen .start-btn:hover {
+            background-color: #3182ce;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+        }
+        .init-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
+        }
+    </style>
+</head>
+<body>
+    <!-- 初始化首页 -->
+    <div class="init-screen" id="initScreen">
+        <h1>📚 单词背诵助手</h1>
+        <p>按键盘任意键，或点击鼠标/下方按钮，开始使用</p>
+        <button class="start-btn" id="startBtn">立即开始</button>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-container">
+        <!-- 左列：已牢记单词区（新增 mastered-header 容器，与中间列结构一致） -->
+        <div class="mastered-section">
+            <div class="mastered-header">
+                <div class="mastered-title">✅ 已牢记 <span class="count-badge" id="masteredCount">0</span></div>
+            </div>
+            <div class="mastered-list" id="masteredList">
+                <div class="empty-state">暂无已牢记单词<br>按←键将中间单词移至此处</div>
+            </div>
+        </div>
+
+        <!-- 中间列：待巩固单词区 -->
+        <div class="review-section">
+            <div class="review-top-fixed">
+                <h1>📚 待巩固 <span class="count-badge" id="reviewCount">0</span></h1>
+                <div class="control-bar">
+                    <button class="btn" id="toggleMeaningBtn" disabled>隐藏释义</button>
+                    <button class="btn reset" id="shuffleBtn" disabled>随机顺序</button>
+                </div>
+                <div class="feedback" id="feedback"></div>
+            </div>
+            <div class="review-card-scroll" id="reviewCardScroll">
+                <div id="wordCardWrapper">
+                    <div class="word-list" id="wordList">
+                        <div style="text-align: center; padding: 80px 20px; color: #4299e1; font-size: 20px; line-height: 2;">
+                            ⏳ 正在加载单词数据...<br>
+                            请稍候，加载完成后自动显示卡片
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右列：待记忆单词区（新增 untrained-header 容器，与中间列结构一致） -->
+        <div class="untrained-section">
+            <div class="untrained-header">
+                <div class="untrained-title">📝 待记忆 <span class="count-badge" id="untrainedCount">0</span></div>
+            </div>
+            <div class="untrained-list" id="untrainedList">
+                <div class="empty-state">暂无待记忆单词<br>按→键将中间单词移至此处</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入外部 JS 文件 -->
+    <script src="app.js"></script>
+</body>
+</html>
