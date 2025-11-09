@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>单词背诵助手（拼写验证版）</title>
-    <!-- 已单独引入CSS，此处无需重复 -->
-    <link rel="stylesheet" href="styles.css"> <!-- 替换为你的CSS文件路径/名称 -->
+    <!-- 引用同文件夹下的 styles.css（小写，已正确配置） -->
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="main-container">
@@ -27,7 +27,7 @@
         <div class="right-section">
             <div class="input-container">
                 <div class="input-title">✍️ 拼写单词</div>
-                <input type="text" class="word-input" id="wordInput" placeholder="输入左侧当前单词，按回车验证">
+                <input type="text" class="word-input" id="wordInput" placeholder="输入单词按回车验证，双击回车跳过">
                 <div class="feedback" id="feedback"></div>
                 <div class="progress" id="progress">进度：0/0</div>
                 <button class="btn" id="nextBtn">下一个单词</button>
@@ -42,6 +42,10 @@
         const leftScrollArea = document.getElementById('leftScrollArea');
         let isAutoScroll = false; // 标记是否是程序自动滚动（避免与手动滚动冲突）
         let scrollTimeout = null; // 滚动防抖计时器
+        let enterClickCount = 0; // 回车点击计数
+        let enterTimeout = null; // 回车防抖计时器
+        // 👇 新增：正确后延迟跳转的时间（单位：毫秒，可调整，当前750=0.75秒，想改0.7秒就设为700）
+        const correctDelay = 750;
 
         // 加载JSON文件（核心：读取同文件夹下的Vocabulary.json）
         fetch('Vocabulary.json')
@@ -151,6 +155,7 @@
             document.getElementById('wordInput').value = '';
             document.getElementById('feedback').textContent = '';
             document.getElementById('feedback').className = 'feedback';
+            enterClickCount = 0; // 重置回车计数
 
             // 自动滚动结束后重置标记（匹配滚动动画时长）
             setTimeout(() => {
@@ -164,21 +169,23 @@
             progressEl.textContent = `进度：${currentIndex + 1}/${shuffledWords.length}`;
         }
 
-        // 验证输入的单词是否正确
+        // 验证输入的单词是否正确（👇 优化：即时判断，无延迟）
         function validateInput() {
             const inputEl = document.getElementById('wordInput');
             const feedbackEl = document.getElementById('feedback');
             const inputValue = inputEl.value.trim().toLowerCase();
             const currentWord = shuffledWords[currentIndex].word.toLowerCase();
 
+            // 即时判断，无延迟
             if (inputValue === currentWord) {
                 feedbackEl.textContent = '✅ 拼写正确！';
                 feedbackEl.className = 'feedback correct';
-                // 延迟0.5秒自动跳转到下一个单词
+                // 👇 正确后延迟跳转（时间由上面的 correctDelay 控制）
                 setTimeout(() => {
                     goToNextWord();
-                }, 500);
+                }, correctDelay);
             } else {
+                // 👇 错误后即时提示，不跳转，保留输入框内容方便修改
                 feedbackEl.textContent = '❌ 拼写错误，再试试！';
                 feedbackEl.className = 'feedback error';
                 inputEl.select(); // 选中输入内容，方便重新输入
@@ -235,10 +242,36 @@
             const showBtn = document.getElementById('showBtn');
             const shuffleBtn = document.getElementById('shuffleBtn');
 
-            // 输入框按回车验证单词
+            // 核心：回车事件（支持输入验证+双击回车跳过）
             inputEl.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
-                    validateInput();
+                    e.preventDefault(); // 阻止默认换行行为
+                    enterClickCount++;
+
+                    // 1秒内连续按2次回车 → 跳过当前单词
+                    if (enterClickCount === 2) {
+                        clearTimeout(enterTimeout);
+                        document.getElementById('feedback').textContent = '⏭️ 跳过当前单词';
+                        document.getElementById('feedback').className = 'feedback';
+                        setTimeout(() => {
+                            goToNextWord();
+                        }, 300);
+                        enterClickCount = 0;
+                    }
+
+                    // 1秒内只按1次回车 → 即时验证输入（无延迟）
+                    if (enterClickCount === 1) {
+                        enterTimeout = setTimeout(() => {
+                            const inputValue = inputEl.value.trim();
+                            if (inputValue) {
+                                validateInput(); // 👇 有输入则即时验证
+                            } else {
+                                document.getElementById('feedback').textContent = '💡 双击回车可跳过';
+                                document.getElementById('feedback').className = 'feedback';
+                            }
+                            enterClickCount = 0;
+                        }, 250); // 双击回车的判断间隔（保持0.25秒，按你的需求未改）
+                    }
                 }
             });
 
@@ -264,7 +297,7 @@
                 updateProgress();
             });
 
-            // 核心：手动滚动左侧列表时，自动选中居中单词
+            // 手动滚动左侧列表时，自动选中居中单词
             leftScrollArea.addEventListener('scroll', () => {
                 // 忽略程序自动滚动的情况
                 if (isAutoScroll) return;
@@ -284,6 +317,7 @@
                         updateProgress();
                         document.getElementById('wordInput').value = '';
                         document.getElementById('feedback').textContent = '';
+                        enterClickCount = 0; // 重置回车计数
                     }
                 }, 300);
             });

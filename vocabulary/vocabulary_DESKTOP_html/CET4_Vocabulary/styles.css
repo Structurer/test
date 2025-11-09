@@ -18,7 +18,7 @@ body {
     width: 100%;
 }
 .left-section {
-    flex: 5;
+    flex: 9;
     background: white;
     border-radius: 12px;
     box-shadow: 0 2px 15px rgba(0,0,0,0.08);
@@ -27,7 +27,7 @@ body {
     max-height: calc(100vh - 40px);
 }
 .right-section {
-    flex: 2;
+    flex: 4;
     background: white;
     border-radius: 12px;
     box-shadow: 0 2px 15px rgba(0,0,0,0.08);
