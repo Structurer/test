@@ -16,24 +16,27 @@
             </div>
         </div>
 
-        <!-- 中间列：待巩固单词区 -->
-        <div class="review-section" id="middleScrollArea">
-            <h1>📚 待巩固</h1>
-            
-            <div class="control-bar">
-                <button class="btn" id="hideBtn" disabled>隐藏所有释义</button>
-                <button class="btn" id="showBtn" disabled>显示所有释义</button>
-                <button class="btn reset" id="shuffleBtn" disabled>随机打乱顺序</button>
-                <span class="word-count" id="count">待巩固：<span>0</span> 个</span>
+        <!-- 中间列：待巩固单词区（仅卡片区域滚动） -->
+        <div class="review-section" id="middleSection">
+            <!-- 顶部固定区域（不滚动） -->
+            <div class="review-header">
+                <h1>📚 待巩固</h1>
+                <div class="control-bar">
+                    <button class="btn" id="hideBtn" disabled>隐藏所有释义</button>
+                    <button class="btn" id="showBtn" disabled>显示所有释义</button>
+                    <button class="btn reset" id="shuffleBtn" disabled>随机打乱顺序</button>
+                    <span class="word-count" id="count">待巩固：<span>0</span> 个</span>
+                </div>
+                <div class="feedback" id="feedback">←：移至已牢记 | ↑↓/空格/Enter：切换 | →：移至待记忆</div>
+                <div class="progress" id="progress">已牢记：0 个 | 待记忆：0 个</div>
             </div>
-
-            <div class="feedback" id="feedback">←：移至已牢记 | ↑↓/空格/Enter：切换 | →：移至待记忆</div>
-            <div class="progress" id="progress">已牢记：0 个 | 待记忆：0 个</div>
-
-            <div class="word-list" id="wordList">
-                <div style="text-align: center; padding: 80px 20px; color: #4299e1; font-size: 20px; line-height: 2;">
-                    ⏳ 正在加载单词数据...<br>
-                    请稍候，加载完成后自动显示卡片
+            <!-- 卡片滚动区域（仅此处滚动） -->
+            <div class="word-scroll-container" id="wordScrollContainer">
+                <div class="word-list" id="wordList">
+                    <div style="text-align: center; padding: 80px 20px; color: #4299e1; font-size: 20px; line-height: 2;">
+                        ⏳ 正在加载单词数据...<br>
+                        请稍候，加载完成后自动显示卡片
+                    </div>
                 </div>
             </div>
         </div>
@@ -57,7 +60,7 @@
         let latestMasteredIndex = -1;
         let latestUntrainedIndex = -1;
 
-        const middleScrollArea = document.getElementById('middleScrollArea');
+        const wordScrollContainer = document.getElementById('wordScrollContainer'); // 中间列滚动容器（仅卡片区）
         const masteredList = document.getElementById('masteredList');
         const untrainedList = document.getElementById('untrainedList');
         let isAutoScroll = false;
@@ -246,6 +249,7 @@
 
             isAutoScroll = true;
             cards.forEach((card, index) => card.classList.toggle('active', index === currentIndex));
+            // 滚动容器改为卡片滚动区
             cards[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             document.getElementById('feedback').textContent = '←：移至已牢记 | ↑↓/空格/Enter：切换 | →：移至待记忆';
@@ -390,13 +394,13 @@
             });
             shuffleBtn.addEventListener('click', shuffleToReviewWords);
 
-            // 中间列滚动事件：滚动后自动选中居中卡片
-            middleScrollArea.addEventListener('scroll', () => {
+            // 中间列滚动事件：滚动后自动选中居中卡片（滚动容器改为 wordScrollContainer）
+            wordScrollContainer.addEventListener('scroll', () => {
                 if (isAutoScroll) return;
                 clearTimeout(scrollTimeout);
                 scrollTimeout = setTimeout(() => {
                     const cards = document.querySelectorAll('.word-card');
-                    const scrollAreaRect = middleScrollArea.getBoundingClientRect();
+                    const scrollAreaRect = wordScrollContainer.getBoundingClientRect();
                     const centerY = scrollAreaRect.top + scrollAreaRect.height / 2;
                     let closestIndex = currentIndex;
                     let minDistance = Infinity;
@@ -419,4 +423,3 @@
         }
     </script>
 </body>
-</html>
