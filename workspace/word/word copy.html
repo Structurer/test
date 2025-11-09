@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词卡片配色选择页</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑", sans-serif;
+        }
+        body {
+            background: #f5f5f5;
+            padding: 30px;
+        }
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .word-card {
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .word-card:hover {
+            transform: translateY(-3px);
+        }
+        .word-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #2d3748;
+        }
+        .translations-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .translation-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .pos-tag {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #2d3748;
+            font-weight: 500;
+        }
+        .meaning {
+            color: #4a5568;
+        }
+
+        /* 20种不同配色方案 */
+        .card-1 { background: #e8f4f8; border: 1px solid #bee3f8; }
+        .card-1 .pos-tag { background: #bee3f8; }
+
+        .card-2 { background: #f0f8fb; border: 1px solid #90cdf4; }
+        .card-2 .pos-tag { background: #90cdf4; }
+
+        .card-3 { background: #f5fafe; border: 1px solid #63b3ed; }
+        .card-3 .pos-tag { background: #63b3ed; }
+
+        .card-4 { background: #eaf6fa; border: 1px solid #38b2ac; }
+        .card-4 .pos-tag { background: #38b2ac; }
+
+        .card-5 { background: #f5f5f5; border: 1px solid #a0aec0; }
+        .card-5 .pos-tag { background: #a0aec0; }
+
+        .card-6 { background: #fafafa; border: 1px solid #cbd5e0; }
+        .card-6 .pos-tag { background: #cbd5e0; }
+
+        .card-7 { background: #fef7fb; border: 1px solid #d6bcfa; }
+        .card-7 .pos-tag { background: #d6bcfa; }
+
+        .card-8 { background: #faf0f5; border: 1px solid #b794f4; }
+        .card-8 .pos-tag { background: #b794f4; }
+
+        .card-9 { background: #fcf1f7; border: 1px solid #9f7aea; }
+        .card-9 .pos-tag { background: #9f7aea; }
+
+        .card-10 { background: #f5fafe; border: 1px solid #4299e1; }
+        .card-10 .pos-tag { background: #4299e1; }
+
+        .card-11 { background: #e8f4f8; border: 1px solid #3182ce; }
+        .card-11 .pos-tag { background: #3182ce; }
+
+        .card-12 { background: #f0f8fb; border: 1px solid #2b6cb0; }
+        .card-12 .pos-tag { background: #2b6cb0; }
+
+        .card-13 { background: #fdf2f8; border: 1px solid #e53e3e; }
+        .card-13 .pos-tag { background: #e53e3e; color: white; }
+
+        .card-14 { background: #fef7fb; border: 1px solid #c53030; }
+        .card-14 .pos-tag { background: #c53030; color: white; }
+
+        .card-15 { background: #f5f5f5; border: 1px solid #48bb78; }
+        .card-15 .pos-tag { background: #48bb78; color: white; }
+
+        .card-16 { background: #f0fdf4; border: 1px solid #38a169; }
+        .card-16 .pos-tag { background: #38a169; color: white; }
+
+        .card-17 { background: #fefcbf; border: 1px solid #ed8936; }
+        .card-17 .pos-tag { background: #ed8936; color: white; }
+
+        .card-18 { background: #faf6ed; border: 1px solid #dd6b20; }
+        .card-18 .pos-tag { background: #dd6b20; color: white; }
+
+        .card-19 { background: #f8f8f8; border: 1px solid #718096; }
+        .card-19 .pos-tag { background: #718096; color: white; }
+
+        .card-20 { background: #ffffff; border: 1px solid #2d3748; }
+        .card-20 .pos-tag { background: #2d3748; color: white; }
+    </style>
+</head>
+<body>
+    <h1>单词卡片配色选择（4列×5行）</h1>
+    <div class="card-grid">
+        <!-- 第1张卡片 -->
+        <div class="word-card card-1">
+            <div class="word-header">Serendipity</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">意外发现美好事物的运气</span>
+                    <span class="pos-tag">n.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第2张卡片 -->
+        <div class="word-card card-2">
+            <div class="word-header">Ephemeral</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">短暂易逝的；朝生暮死的</span>
+                    <span class="pos-tag">adj.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第3张卡片 -->
+        <div class="word-card card-3">
+            <div class="word-header">Melancholy</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">忧郁；愁思</span>
+                    <span class="pos-tag">n.</span>
+                </div>
+                <div class="translation-item">
+                    <span class="meaning">忧郁的；悲伤的</span>
+                    <span class="pos-tag">adj.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第4张卡片 -->
+        <div class="word-card card-4">
+            <div class="word-header">Quintessential</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">精髓的；典型的</span>
+                    <span class="pos-tag">adj.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第5张卡片 -->
+        <div class="word-card card-5">
+            <div class="word-header">Ethereal</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">轻盈的；缥缈的；优雅的</span>
+                    <span class="pos-tag">adj.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第6张卡片 -->
+        <div class="word-card card-6">
+            <div class="word-header">Labyrinth</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">迷宫；错综复杂的事物</span>
+                    <span class="pos-tag">n.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第7张卡片 -->
+        <div class="word-card card-7">
+            <div class="word-header">Lullaby</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">摇篮曲；催眠曲</span>
+                    <span class="pos-tag">n.</span>
+                </div>
+                <div class="translation-item">
+                    <span class="meaning">唱摇篮曲使入睡</span>
+                    <span class="pos-tag">v.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第8张卡片 -->
+        <div class="word-card card-8">
+            <div class="word-header">Mellifluous</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">悦耳的；流畅的</span>
+                    <span class="pos-tag">adj.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第9张卡片 -->
+        <div class="word-card card-9">
+            <div class="word-header">Serene</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">平静的；安详的；清澈的</span>
+                    <span class="pos-tag">adj.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第10张卡片 -->
+        <div class="word-card card-10">
+            <div class="word-header">Vivid</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">生动的；鲜明的；逼真的</span>
+                    <span class="pos-tag">adj.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第11张卡片 -->
+        <div class="word-card card-11">
+            <div class="word-header">Whisper</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">低语；耳语；私语</span>
+                    <span class="pos-tag">v./n.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第12张卡片 -->
+        <div class="word-card card-12">
+            <div class="word-header">Bliss</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">极乐；无上幸福</span>
+                    <span class="pos-tag">n.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第13张卡片 -->
+        <div class="word-card card-13">
+            <div class="word-header">Cascade</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">小瀑布；瀑布状的东西</span>
+                    <span class="pos-tag">n.</span>
+                </div>
+                <div class="translation-item">
+                    <span class="meaning">瀑布般落下；一连串发生</span>
+                    <span class="pos-tag">v.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第14张卡片 -->
+        <div class="word-card card-14">
+            <div class="word-header">Dilemma</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">困境；进退两难</span>
+                    <span class="pos-tag">n.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第15张卡片 -->
+        <div class="word-card card-15">
+            <div class="word-header">Euphoria</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">狂喜；极度兴奋</span>
+                    <span class="pos-tag">n.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第16张卡片 -->
+        <div class="word-card card-16">
+            <div class="word-header">Glimmer</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">微光；一线希望</span>
+                    <span class="pos-tag">n.</span>
+                </div>
+                <div class="translation-item">
+                    <span class="meaning">发微光；隐约显现</span>
+                    <span class="pos-tag">v.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第17张卡片 -->
+        <div class="word-card card-17">
+            <div class="word-header">Harmony</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">和谐；融洽；和声</span>
+                    <span class="pos-tag">n.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第18张卡片 -->
+        <div class="word-card card-18">
+            <div class="word-header">Ingenious</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">灵巧的；巧妙的；有独创性的</span>
+                    <span class="pos-tag">adj.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第19张卡片 -->
+        <div class="word-card card-19">
+            <div class="word-header">Jubilant</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">欢欣鼓舞的；喜气洋洋的</span>
+                    <span class="pos-tag">adj.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第20张卡片 -->
+        <div class="word-card card-20">
+            <div class="word-header">Kindle</div>
+            <div class="translations-container">
+                <div class="translation-item">
+                    <span class="meaning">点燃；激起；照亮</span>
+                    <span class="pos-tag">v.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
