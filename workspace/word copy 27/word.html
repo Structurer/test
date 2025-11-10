@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词平移挪动效果（单容器绝对定位版）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: sans-serif;
+        }
+
+        body {
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative; /* 主容器相对定位，承载所有绝对定位卡片 */
+            height: calc(100vh - 40px);
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        /* 三列区域划分（仅做视觉分隔，无独立滚动） */
+        .column-marker {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background-color: #eee;
+            z-index: 1;
+        }
+
+        .column-marker.left {
+            left: 33.333%;
+        }
+
+        .column-marker.right {
+            left: 66.666%;
+        }
+
+        /* 列标题 */
+        .column-title {
+            position: absolute;
+            top: 16px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #4299e1;
+            z-index: 2;
+        }
+
+        .title-left {
+            left: 16px;
+        }
+
+        .title-middle {
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .title-right {
+            right: 16px;
+        }
+
+        /* 计数徽章 */
+        .count-badge {
+            background-color: rgba(66,153,225,0.1);
+            color: #4299e1;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-left: 8px;
+        }
+
+        /* 核心：单词卡片样式（绝对定位，统一顶端对齐） */
+        .word-card {
+            position: absolute;
+            top: 80px; /* 统一顶端位置，所有卡片顶端对齐 */
+            width: 30%;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); /* 平移过渡 */
+            font-size: 18px;
+            color: #2d3748;
+            cursor: default;
+            z-index: 3;
+        }
+
+        /* 待巩固卡片（中间区域） */
+        .word-card.pending {
+            left: 50%;
+            transform: translateX(-50%); /* 水平居中 */
+        }
+
+        /* 已牢记卡片（左列区域） */
+        .word-card.mastered {
+            left: 1.666%; /* 左列居中（33.333%/2 - 15%） */
+            transform: translateX(0);
+        }
+
+        /* 待记忆卡片（右列区域） */
+        .word-card.untrained {
+            right: 1.666%; /* 右列居中（33.333%/2 - 15%） */
+            transform: translateX(0);
+        }
+
+        /* 高亮当前操作卡片 */
+        .word-card.active {
+            border: 2px solid #4299e1;
+            box-shadow: 0 0 0 2px rgba(66,153,225,0.2), 0 4px 12px rgba(0,0,0,0.1);
+            background-color: #f8fafe;
+            z-index: 4; /* 高亮卡片层级最高 */
+        }
+
+        /* 空状态提示 */
+        .empty-state {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 16px;
+            line-height: 1.8;
+            text-align: center;
+            width: 30%;
+            z-index: 2;
+        }
+
+        .empty-left {
+            left: 1.666%;
+        }
+
+        .empty-middle {
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .empty-right {
+            right: 1.666%;
+        }
+
+        /* 操作提示 */
+        .control-tip {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #666;
+            font-size: 14px;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 列分隔线 -->
+        <div class="column-marker left"></div>
+        <div class="column-marker right"></div>
+
+        <!-- 列标题 -->
+        <div class="column-title title-left">
+            已牢记 <span id="masteredCount" class="count-badge">0</span>
+        </div>
+        <div class="column-title title-middle">
+            待巩固 <span id="reviewCount" class="count-badge">0</span>
+        </div>
+        <div class="column-title title-right">
+            待记忆 <span id="untrainedCount" class="count-badge">0</span>
+        </div>
+
+        <!-- 空状态提示 -->
+        <div id="emptyLeft" class="empty-state empty-left">暂无单词<br>按←键移动至此</div>
+        <div id="emptyMiddle" class="empty-state empty-middle">加载中... 请稍候</div>
+        <div id="emptyRight" class="empty-state empty-right">暂无单词<br>按→键移动至此</div>
+
+        <!-- 操作提示 -->
+        <div class="control-tip">↑↓ 切换单词 | ← 移至已牢记 | → 移至待记忆 | 单词以顶端对齐平移</div>
+    </div>
+
+    <script>
+        // 核心变量
+        let currentIndex = 0;
+        let isAnimating = false;
+        let allWords = [];
+        // 分类存储：mastered（已牢记）、pending（待巩固）、untrained（待记忆）
+        let wordGroups = {
+            mastered: [],
+            pending: [],
+            untrained: []
+        };
+
+        // DOM 元素
+        const appContainer = document.querySelector('.app-container');
+        const emptyLeft = document.getElementById('emptyLeft');
+        const emptyMiddle = document.getElementById('emptyMiddle');
+        const emptyRight = document.getElementById('emptyRight');
+        const masteredCountEl = document.getElementById('masteredCount');
+        const reviewCountEl = document.getElementById('reviewCount');
+        const untrainedCountEl = document.getElementById('untrainedCount');
+
+        // 初始化：读取 Vocabulary.json 并渲染
+        async function init() {
+            try {
+                const response = await fetch('Vocabulary.json');
+                if (!response.ok) throw new Error('文件加载失败');
+                allWords = await response.json();
+                // 初始所有单词放入待巩固组
+                wordGroups.pending = [...allWords];
+                updateCounts();
+                renderAllCards();
+                bindKeyboardEvents();
+                // 初始高亮第一个待巩固单词
+                if (wordGroups.pending.length > 0) {
+                    highlightCard(currentIndex);
+                }
+            } catch (error) {
+                emptyMiddle.innerHTML = `<div class="empty-state empty-middle">❌ 加载失败<br>请检查 Vocabulary.json 是否存在</div>`;
+                console.error('加载错误：', error);
+            }
+        }
+
+        // 渲染所有分类的单词卡片
+        function renderAllCards() {
+            // 先清空所有现有卡片
+            document.querySelectorAll('.word-card').forEach(card => card.remove());
+
+            // 渲染已牢记卡片（左列）
+            wordGroups.mastered.forEach((wordObj, index) => {
+                renderCard(wordObj, 'mastered', index);
+            });
+
+            // 渲染待巩固卡片（中间列）
+            wordGroups.pending.forEach((wordObj, index) => {
+                renderCard(wordObj, 'pending', index);
+            });
+
+            // 渲染待记忆卡片（右列）
+            wordGroups.untrained.forEach((wordObj, index) => {
+                renderCard(wordObj, 'untrained', index);
+            });
+
+            // 更新空状态显示
+            updateEmptyStates();
+        }
+
+        // 渲染单个卡片
+        function renderCard(wordObj, group, index) {
+            const card = document.createElement('div');
+            card.className = `word-card ${group}`;
+            card.dataset.group = group;
+            card.dataset.index = index;
+            card.textContent = wordObj.word || '无单词';
+            appContainer.appendChild(card);
+        }
+
+        // 更新分类计数
+        function updateCounts() {
+            masteredCountEl.textContent = wordGroups.mastered.length;
+            reviewCountEl.textContent = wordGroups.pending.length;
+            untrainedCountEl.textContent = wordGroups.untrained.length;
+        }
+
+        // 更新空状态显示
+        function updateEmptyStates() {
+            emptyLeft.style.display = wordGroups.mastered.length > 0 ? 'none' : 'block';
+            emptyMiddle.style.display = wordGroups.pending.length > 0 ? 'none' : 'block';
+            emptyRight.style.display = wordGroups.untrained.length > 0 ? 'none' : 'block';
+        }
+
+        // 高亮当前操作卡片（仅待巩固组有高亮）
+        function highlightCard(index) {
+            // 移除所有高亮
+            document.querySelectorAll('.word-card.active').forEach(card => {
+                card.classList.remove('active');
+            });
+            // 高亮当前待巩固卡片
+            const pendingCards = document.querySelectorAll('.word-card.pending');
+            if (pendingCards[index]) {
+                pendingCards[index].classList.add('active');
+            }
+        }
+
+        // 核心：单词平移挪动逻辑
+        function moveCard(toGroup) {
+            if (isAnimating || wordGroups.pending.length === 0) return;
+            isAnimating = true;
+
+            // 获取当前高亮卡片的单词数据
+            const currentWord = wordGroups.pending[currentIndex];
+            const currentCard = document.querySelector(`.word-card.pending[data-index="${currentIndex}"]`);
+
+            // 1. 从待巩固组移除
+            wordGroups.pending.splice(currentIndex, 1);
+
+            // 2. 添加到目标组
+            wordGroups[toGroup].push(currentWord);
+
+            // 3. 执行平移动画（修改卡片的 group 类，触发 CSS 过渡）
+            currentCard.dataset.group = toGroup;
+            currentCard.classList.remove('pending');
+            currentCard.classList.add(toGroup);
+
+            // 4. 动画结束后更新视图
+            setTimeout(() => {
+                updateCounts();
+                renderAllCards(); // 重新渲染所有卡片（确保索引正确）
+                // 更新当前索引（如果待巩固组还有单词）
+                if (wordGroups.pending.length > 0) {
+                    currentIndex = Math.min(currentIndex, wordGroups.pending.length - 1);
+                    highlightCard(currentIndex);
+                }
+                isAnimating = false;
+            }, 500); // 与 CSS 过渡时间一致
+        }
+
+        // 绑定键盘事件
+        function bindKeyboardEvents() {
+            document.addEventListener('keydown', (e) => {
+                if (isAnimating || wordGroups.pending.length === 0) return;
+
+                switch (e.key) {
+                    // 左箭头：移至已牢记
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        moveCard('mastered');
+                        break;
+                    // 右箭头：移至待记忆
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        moveCard('untrained');
+                        break;
+                    // 上箭头：切换上一个待巩固单词
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        if (currentIndex > 0) {
+                            currentIndex--;
+                            highlightCard(currentIndex);
+                        }
+                        break;
+                    // 下箭头：切换下一个待巩固单词
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        if (currentIndex < wordGroups.pending.length - 1) {
+                            currentIndex++;
+                            highlightCard(currentIndex);
+                        }
+                        break;
+                }
+            });
+        }
+
+        // 启动
+        init();
+    </script>
+</body>
+</html>

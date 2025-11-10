@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>标签切换式单词工具（方案3）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: sans-serif;
+        }
+
+        body {
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+
+        .app-container {
+            max-width: 800px; /* 仅1个操作区，宽度集中 */
+            margin: 0 auto;
+            height: calc(100vh - 40px);
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        /* 顶部分类标签栏 */
+        .tab-bar {
+            display: flex;
+            border-bottom: 1px solid #eee;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 16px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        /* 激活的标签样式 */
+        .tab.active {
+            color: #4299e1;
+            border-bottom: 2px solid #4299e1;
+        }
+
+        .tab .count-badge {
+            background-color: rgba(66,153,225,0.1);
+            color: #4299e1;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 14px;
+            margin-left: 6px;
+        }
+
+        /* 核心：单个操作区（所有单词都在这里显示） */
+        .content-area {
+            padding: 20px;
+            height: calc(100% - 60px);
+            overflow-y: auto;
+        }
+
+        /* 单词卡片（统一样式，仅通过分类区分边框） */
+        .word-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            font-size: 18px;
+            color: #2d3748;
+            cursor: default;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* 待巩固卡片（操作核心，高亮） */
+        .word-card.pending.active {
+            border: 2px solid #4299e1;
+            box-shadow: 0 0 0 2px rgba(66,153,225,0.2), 0 4px 12px rgba(0,0,0,0.1);
+            background-color: #f8fafe;
+        }
+
+        /* 已牢记/待记忆卡片（仅分类标识） */
+        .word-card.mastered {
+            border-left: 4px solid #48bb78;
+        }
+
+        .word-card.untrained {
+            border-left: 4px solid #ed8936;
+        }
+
+        /* 空状态提示 */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #999;
+            font-size: 16px;
+            line-height: 1.8;
+            margin-top: 50px;
+        }
+
+        /* 操作提示 */
+        .control-tip {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #666;
+            font-size: 14px;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 顶部分类标签 -->
+        <div class="tab-bar">
+            <div class="tab" data-tab="mastered">
+                已牢记 <span id="masteredCount" class="count-badge">0</span>
+            </div>
+            <div class="tab active" data-tab="pending">
+                待巩固 <span id="pendingCount" class="count-badge">0</span>
+            </div>
+            <div class="tab" data-tab="untrained">
+                待记忆 <span id="untrainedCount" class="count-badge">0</span>
+            </div>
+        </div>
+
+        <!-- 核心操作区（仅1个） -->
+        <div class="content-area" id="contentArea">
+            <div class="empty-state" id="loadingState">加载中... 请稍候</div>
+        </div>
+    </div>
+
+    <!-- 操作提示 -->
+    <div class="control-tip">
+        ↑↓ 切换待巩固单词 | ← 移至已牢记 | → 移至待记忆 | 点击标签切换分类
+    </div>
+
+    <script>
+        // 核心变量
+        let currentIndex = 0;
+        let isAnimating = false;
+        let activeTab = 'pending'; // 当前激活的标签（默认待巩固）
+        // 单词分组数据
+        const wordData = {
+            mastered: [],
+            pending: [],
+            untrained: []
+        };
+
+        // DOM元素缓存
+        const tabs = document.querySelectorAll('.tab');
+        const contentArea = document.getElementById('contentArea');
+        const counts = {
+            mastered: document.getElementById('masteredCount'),
+            pending: document.getElementById('pendingCount'),
+            untrained: document.getElementById('untrainedCount')
+        };
+
+        // 初始化：加载外部JSON
+        async function init() {
+            try {
+                const response = await fetch('Vocabulary.json');
+                if (!response.ok) throw new Error(`文件加载失败（状态码：${response.status}）`);
+                const allWords = await response.json();
+                wordData.pending = [...allWords];
+
+                // 更新界面
+                updateCounts();
+                renderContent(activeTab);
+                bindEvents();
+
+                // 初始高亮待巩固第一个单词
+                if (wordData.pending.length > 0) {
+                    highlightActiveCard();
+                    scrollToActiveCard();
+                }
+            } catch (error) {
+                contentArea.innerHTML = `
+                    <div class="empty-state">
+                        ❌ 加载失败<br>
+                        ${error.message}<br>
+                        请检查JSON文件路径和格式
+                    </div>
+                `;
+                console.error('初始化错误：', error);
+            }
+        }
+
+        // 渲染当前标签对应的内容
+        function renderContent(tabName) {
+            const words = wordData[tabName];
+            contentArea.innerHTML = '';
+
+            // 空状态处理
+            if (words.length === 0) {
+                const tip = tabName === 'mastered' ? '按←键从待巩固移动单词' : 
+                            tabName === 'untrained' ? '按→键从待巩固移动单词' : 
+                            '暂无待巩固单词';
+                contentArea.innerHTML = `<div class="empty-state">${tip}</div>`;
+                return;
+            }
+
+            // 渲染当前分类的所有单词
+            words.forEach((wordObj, index) => {
+                const card = document.createElement('div');
+                card.className = `word-card ${tabName} ${tabName === 'pending' && index === currentIndex ? 'active' : ''}`;
+                card.textContent = wordObj.word || '无单词';
+                card.dataset.index = index;
+                contentArea.appendChild(card);
+            });
+        }
+
+        // 更新计数显示
+        function updateCounts() {
+            counts.mastered.textContent = wordData.mastered.length;
+            counts.pending.textContent = wordData.pending.length;
+            counts.untrained.textContent = wordData.untrained.length;
+        }
+
+        // 高亮当前激活的待巩固单词
+        function highlightActiveCard() {
+            if (activeTab !== 'pending') return;
+            const cards = contentArea.querySelectorAll('.word-card.pending');
+            cards.forEach((card, index) => {
+                card.classList.toggle('active', index === currentIndex);
+            });
+        }
+
+        // 滚动到当前激活的单词（2/3处）
+        function scrollToActiveCard() {
+            if (activeTab !== 'pending') return;
+            const activeCard = contentArea.querySelector('.word-card.pending.active');
+            if (!activeCard) return;
+
+            const cardTop = activeCard.offsetTop;
+            const areaHeight = contentArea.clientHeight;
+            contentArea.scrollTop = cardTop - areaHeight * (2/3);
+        }
+
+        // 核心：单词移动（切换分类）
+        function moveWord(fromTab, toTab, index) {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            // 获取单词数据和DOM元素
+            const word = wordData[fromTab][index];
+            const card = contentArea.querySelector(`.word-card[data-index="${index}"]`);
+
+            // 数据更新：从原分类移除，添加到目标分类
+            wordData[fromTab].splice(index, 1);
+            wordData[toTab].push(word);
+
+            // 动画：移出当前视野
+            card.style.transform = toTab === 'mastered' ? 'translateX(-100%)' : 'translateX(100%)';
+            card.style.opacity = 0;
+
+            // 动画结束后更新界面
+            setTimeout(() => {
+                updateCounts();
+                renderContent(activeTab); // 保持当前标签不变
+
+                // 更新待巩固单词索引
+                if (fromTab === 'pending' && wordData.pending.length > 0) {
+                    currentIndex = Math.min(index, wordData.pending.length - 1);
+                    highlightActiveCard();
+                    scrollToActiveCard();
+                }
+
+                isAnimating = false;
+            }, 400);
+        }
+
+        // 绑定标签点击+键盘事件
+        function bindEvents() {
+            // 标签点击切换
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.dataset.tab;
+                    activeTab = tabName;
+                    // 更新标签激活状态
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    // 渲染对应分类的单词
+                    renderContent(tabName);
+                    // 待巩固标签默认高亮第一个单词
+                    if (tabName === 'pending' && wordData.pending.length > 0) {
+                        highlightActiveCard();
+                        scrollToActiveCard();
+                    }
+                });
+            });
+
+            // 键盘操作（仅待巩固标签有效）
+            document.addEventListener('keydown', (e) => {
+                if (activeTab !== 'pending' || isAnimating || wordData.pending.length === 0) return;
+
+                switch (e.key) {
+                    // 左箭头：待巩固→已牢记
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        moveWord('pending', 'mastered', currentIndex);
+                        break;
+                    // 右箭头：待巩固→待记忆
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        moveWord('pending', 'untrained', currentIndex);
+                        break;
+                    // 上箭头：切换上一个
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        if (currentIndex > 0) {
+                            currentIndex--;
+                            highlightActiveCard();
+                            scrollToActiveCard();
+                        }
+                        break;
+                    // 下箭头：切换下一个
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        if (currentIndex < wordData.pending.length - 1) {
+                            currentIndex++;
+                            highlightActiveCard();
+                            scrollToActiveCard();
+                        }
+                        break;
+                }
+            });
+        }
+
+        // 启动应用
+        init();
+    </script>
+</body>
+</html>

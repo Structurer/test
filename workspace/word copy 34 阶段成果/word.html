@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词分类工具（精准需求版）</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="grid-container">
+        <!-- 左列：已牢记 -->
+        <div class="column" id="masteredColumn">
+            <div class="column-title">
+                已牢记 <span id="masteredCount" class="count-badge">0</span>
+            </div>
+            <div class="empty-state" id="masteredEmpty">
+                暂无单词<br>按←键移动至此
+            </div>
+        </div>
+
+        <!-- 中间列：待巩固（核心交互区，无提示线） -->
+        <div class="column" id="pendingColumn">
+            <div class="column-title">
+                待巩固 <span id="pendingCount" class="count-badge">0</span>
+            </div>
+            <div class="empty-state" id="pendingEmpty">
+                加载中... 请稍候
+            </div>
+        </div>
+
+        <!-- 右列：待记忆 -->
+        <div class="column" id="untrainedColumn">
+            <div class="column-title">
+                待记忆 <span id="untrainedCount" class="count-badge">0</span>
+            </div>
+            <div class="empty-state" id="untrainedEmpty">
+                暂无单词<br>按→键移动至此
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作提示 -->
+    <div class="control-tip">
+        ↑↓ 切换选中（自动定位2/3处） | ← 移至已牢记 | → 移至待记忆 | 单选中+无抖动
+    </div>
+
+    <script>
+        // 全局状态
+        let currentIndex = 0; // 中间列当前选中索引（=2/3范围最近卡片索引）
+        let scrollTimeout = null; // 滚动防抖计时器
+        const wordData = {
+            mastered: [],
+            pending: [],
+            untrained: []
+        };
+
+        // DOM元素缓存
+        const dom = {
+            columns: {
+                mastered: document.getElementById('masteredColumn'),
+                pending: document.getElementById('pendingColumn'),
+                untrained: document.getElementById('untrainedColumn')
+            },
+            empties: {
+                mastered: document.getElementById('masteredEmpty'),
+                pending: document.getElementById('pendingEmpty'),
+                untrained: document.getElementById('untrainedEmpty')
+            },
+            counts: {
+                mastered: document.getElementById('masteredCount'),
+                pending: document.getElementById('pendingCount'),
+                untrained: document.getElementById('untrainedCount')
+            }
+        };
+
+        // 初始化入口
+        async function initApp() {
+            try {
+                // 加载单词数据
+                const response = await fetch('./Vocabulary.json');
+                if (!response.ok) throw new Error(`JSON加载失败（状态码：${response.status}）`);
+                const allWords = await response.json();
+                wordData.pending = [...allWords];
+
+                // 初始化渲染+绑定事件
+                renderColumn('mastered');
+                renderColumn('untrained');
+                renderColumn('pending');
+                updateCounts();
+                bindKeyboardEvents();
+                bindScrollSelectClosest(); // 滚动选中2/3最近卡片
+                window.addEventListener('resize', () => {
+                    // 窗口缩放时重新定位选中卡片
+                    if (wordData.pending.length > 0) {
+                        scrollToTwoThirds(currentIndex);
+                    }
+                });
+
+                // 初始选中+定位
+                if (wordData.pending.length > 0) {
+                    highlightActiveCard(currentIndex);
+                    scrollToTwoThirds(currentIndex);
+                }
+            } catch (error) {
+                dom.empties.pending.innerHTML = `
+                    <div class="empty-state">
+                        ❌ 初始化失败<br>
+                        ${error.message}<br>
+                        请检查JSON文件路径和格式
+                    </div>
+                `;
+                console.error('错误详情：', error);
+            }
+        }
+
+        /**
+         * 渲染指定列
+         * @param {string} group - 列类型：mastered/pending/untrained
+         */
+        function renderColumn(group) {
+            const column = dom.columns[group];
+            const emptyEl = dom.empties[group];
+            const words = wordData[group];
+
+            column.innerHTML = '';
+
+            // 空状态处理
+            if (words.length === 0) {
+                emptyEl.style.display = 'block';
+                column.appendChild(emptyEl);
+                return;
+            }
+            emptyEl.style.display = 'none';
+
+            // 添加列标题
+            const title = createColumnTitle(group);
+            column.appendChild(title);
+
+            // 渲染单词卡片
+            words.forEach((wordObj, index) => {
+                const isActive = group === 'pending' && index === currentIndex;
+                const isLatest = (group === 'mastered' || group === 'untrained') && index === words.length - 1;
+                const card = createWordCard(wordObj, isActive, group, isLatest);
+                column.appendChild(card);
+            });
+
+            // 左右列滚动到底部
+            if (group !== 'pending') {
+                column.scrollTop = column.scrollHeight;
+            }
+        }
+
+        /**
+         * 创建列标题
+         * @param {string} group - 列类型
+         * @returns {HTMLElement} 标题元素
+         */
+        function createColumnTitle(group) {
+            const title = document.createElement('div');
+            title.className = 'column-title';
+            const count = wordData[group].length;
+            const titleText = {
+                mastered: '已牢记',
+                pending: '待巩固',
+                untrained: '待记忆'
+            }[group];
+            title.innerHTML = `${titleText} <span class="count-badge">${count}</span>`;
+            return title;
+        }
+
+        /**
+         * 创建单词卡片
+         * @param {object} wordObj - 单词对象
+         * @param {boolean} isActive - 是否选中（蓝色高亮）
+         * @param {string} group - 列类型
+         * @param {boolean} isLatest - 是否最新单词（左右列）
+         * @returns {HTMLElement} 卡片元素
+         */
+        function createWordCard(wordObj, isActive, group, isLatest) {
+            const card = document.createElement('div');
+            let cardClass = `word-card ${group}`;
+            if (isActive) cardClass += ' active'; // 蓝色高亮仅靠这个类
+            if (isLatest) cardClass += ' new';
+            card.className = cardClass;
+            card.textContent = wordObj.word || '无单词';
+            return card;
+        }
+
+        /**
+         * 高亮选中卡片（始终仅1个）
+         * @param {number} index - 要高亮的索引
+         */
+        function highlightActiveCard(index) {
+            const cards = dom.columns.pending.querySelectorAll('.word-card.pending');
+            // 先移除所有卡片的高亮
+            cards.forEach(card => card.classList.remove('active'));
+            // 给目标索引添加高亮（蓝色）
+            if (cards[index]) {
+                cards[index].classList.add('active');
+            }
+        }
+
+        /**
+         * 定位选中卡片到2/3处
+         * @param {number} index - 选中卡片索引
+         */
+        function scrollToTwoThirds(index) {
+            const column = dom.columns.pending;
+            const cards = column.querySelectorAll('.word-card.pending');
+            const targetCard = cards[index];
+            if (!targetCard) return;
+
+            const columnHeight = column.clientHeight;
+            const cardTop = targetCard.offsetTop;
+            // 直接定位，无平滑滚动（避免抖动）
+            column.scrollTop = cardTop - columnHeight * (2/3);
+        }
+
+        /**
+         * 滚动时选中最接近2/3位置的卡片（核心逻辑：选中=2/3最近卡片）
+         */
+        function bindScrollSelectClosest() {
+            const column = dom.columns.pending;
+            column.addEventListener('scroll', () => {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    const cards = column.querySelectorAll('.word-card.pending');
+                    if (cards.length === 0) return;
+
+                    // 计算2/3位置的Y坐标
+                    const columnRect = column.getBoundingClientRect();
+                    const twoThirdsY = columnRect.top + columnRect.height * (2/3);
+
+                    // 找到最接近2/3位置的卡片
+                    let closestIndex = currentIndex;
+                    let minDistance = Infinity;
+                    cards.forEach((card, index) => {
+                        const cardCenterY = card.getBoundingClientRect().top + card.offsetHeight / 2;
+                        const distance = Math.abs(cardCenterY - twoThirdsY);
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestIndex = index;
+                        }
+                    });
+
+                    // 更新选中状态（仅当索引变化时）
+                    if (closestIndex !== currentIndex) {
+                        currentIndex = closestIndex;
+                        highlightActiveCard(currentIndex);
+                        // 不强制定位，保留滚动后的自然位置
+                    }
+                }, 0); // 防抖，避免滚动中频繁切换
+            });
+        }
+
+        /**
+         * 绑定键盘事件
+         */
+        function bindKeyboardEvents() {
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+                const pendingLen = wordData.pending.length;
+                if (pendingLen === 0) return;
+
+                switch (e.key) {
+                    // 左移：待巩固 → 已牢记
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        moveWord('pending', 'mastered', currentIndex);
+                        break;
+                    // 右移：待巩固 → 待记忆
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        moveWord('pending', 'untrained', currentIndex);
+                        break;
+                    // 上移选中
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        if (currentIndex > 0) {
+                            currentIndex--;
+                            highlightActiveCard(currentIndex);
+                            scrollToTwoThirds(currentIndex);
+                        }
+                        break;
+                    // 下移选中
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        if (currentIndex < pendingLen - 1) {
+                            currentIndex++;
+                            highlightActiveCard(currentIndex);
+                            scrollToTwoThirds(currentIndex);
+                        }
+                        break;
+                }
+            });
+        }
+
+        /**
+         * 移动单词
+         * @param {string} from - 来源列
+         * @param {string} to - 目标列
+         * @param {number} index - 要移动的索引
+         */
+        function moveWord(from, to, index) {
+            const [movedWord] = wordData[from].splice(index, 1);
+            wordData[to].push(movedWord);
+
+            // 更新目标列（左右列）
+            renderColumn(to);
+
+            // 更新来源列（中间列）
+            if (wordData.pending.length > 0) {
+                currentIndex = Math.min(index, wordData.pending.length - 1);
+                renderColumn('pending');
+                highlightActiveCard(currentIndex);
+                scrollToTwoThirds(currentIndex);
+            } else {
+                currentIndex = 0;
+                renderColumn('pending');
+            }
+
+            // 更新计数
+            updateCounts();
+        }
+
+        /**
+         * 更新所有列的计数
+         */
+        function updateCounts() {
+            dom.counts.mastered.textContent = wordData.mastered.length;
+            dom.counts.pending.textContent = wordData.pending.length;
+            dom.counts.untrained.textContent = wordData.untrained.length;
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('load', initApp);
+    </script>
+</body>
+</html>

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词分类工具（无动画纯颜色标记版）</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="grid-container">
+        <div class="column" id="masteredColumn">
+            <div class="column-title">
+                已牢记 <span id="masteredCount" class="count-badge">0</span>
+            </div>
+            <div class="empty-state" id="masteredEmpty">
+                暂无单词<br>按←键移动至此
+            </div>
+        </div>
+
+        <div class="column" id="pendingColumn">
+            <div class="column-title">
+                待巩固 <span id="pendingCount" class="count-badge">0</span>
+            </div>
+            <div class="empty-state" id="pendingEmpty">
+                加载中... 请稍候
+            </div>
+        </div>
+
+        <div class="column" id="untrainedColumn">
+            <div class="column-title">
+                待记忆 <span id="untrainedCount" class="count-badge">0</span>
+            </div>
+            <div class="empty-state" id="untrainedEmpty">
+                暂无单词<br>按→键移动至此
+            </div>
+        </div>
+    </div>
+
+    <div class="control-tip">
+        ↑↓ 切换待巩固单词 | ← 移至已牢记 | → 移至待记忆 | 无动画+仅颜色标记
+    </div>
+
+    <script>
+        let currentIndex = 0;
+        let scrollTimeout = null; // 仅保留滚动防抖（用于自动选中）
+        const wordData = {
+            mastered: [],
+            pending: [],
+            untrained: []
+        };
+
+        const columns = {
+            mastered: document.getElementById('masteredColumn'),
+            pending: document.getElementById('pendingColumn'),
+            untrained: document.getElementById('untrainedColumn')
+        };
+        const empties = {
+            mastered: document.getElementById('masteredEmpty'),
+            pending: document.getElementById('pendingEmpty'),
+            untrained: document.getElementById('untrainedEmpty')
+        };
+        const counts = {
+            mastered: document.getElementById('masteredCount'),
+            pending: document.getElementById('pendingCount'),
+            untrained: document.getElementById('untrainedCount')
+        };
+
+        async function init() {
+            try {
+                const response = await fetch('./Vocabulary.json');
+                if (!response.ok) {
+                    throw new Error(`JSON文件加载失败（状态码：${response.status}）`);
+                }
+                const allWords = await response.json();
+                wordData.pending = [...allWords];
+
+                renderInitialColumn('mastered');
+                renderInitialColumn('untrained');
+                renderInitialColumn('pending');
+                updateCounts();
+                bindKeyboardEvents();
+                bindScrollAutoSelect(); // 保留滚动自动选中功能
+
+                if (wordData.pending.length > 0) {
+                    highlightActiveCard();
+                    scrollToActiveCard();
+                }
+            } catch (error) {
+                empties.pending.innerHTML = `
+                    <div class="empty-state">
+                        ❌ 初始化失败<br>
+                        ${error.message}<br>
+                        请检查JSON文件路径和格式
+                    </div>
+                `;
+                console.error('错误信息：', error);
+            }
+        }
+
+        // 初始化渲染列（无动画）
+        function renderInitialColumn(groupName) {
+            const words = wordData[groupName];
+            const column = columns[groupName];
+            const empty = empties[groupName];
+
+            if (words.length === 0) {
+                empty.style.display = 'block';
+                return;
+            }
+            empty.style.display = 'none';
+
+            column.innerHTML = '';
+            column.appendChild(createColumnTitle(groupName));
+
+            words.forEach((wordObj, index) => {
+                const isActive = groupName === 'pending' && index === currentIndex;
+                const isLatest = (groupName === 'mastered' || groupName === 'untrained') && index === words.length - 1;
+                const card = createWordCard(wordObj, isActive, groupName, isLatest);
+                column.appendChild(card);
+            });
+
+            if (groupName !== 'pending') {
+                column.scrollTop = column.scrollHeight;
+            }
+        }
+
+        // 创建单词卡片（仅颜色标记，无动画）
+        function createWordCard(wordObj, isActive, groupName, isLatest) {
+            const card = document.createElement('div');
+            let cardClass = `word-card ${groupName}`;
+            if (isActive) cardClass += ' active';
+            if (isLatest) cardClass += ' new';
+            card.className = cardClass;
+            card.textContent = wordObj.word || '无单词';
+            return card;
+        }
+
+        // 创建列标题（复用）
+        function createColumnTitle(groupName) {
+            const title = document.createElement('div');
+            title.className = 'column-title';
+            const count = counts[groupName].textContent;
+            title.innerHTML = `${groupName === 'mastered' ? '已牢记' : groupName === 'untrained' ? '待记忆' : '待巩固'} <span class="count-badge">${count}</span>`;
+            return title;
+        }
+
+        // 左右列新增卡片（无动画，直接渲染）
+        function addNewCardToColumn(groupName, newWord) {
+            const column = columns[groupName];
+            const empty = empties[groupName];
+            empty.style.display = 'none';
+
+            // 移除原有所有卡片的"new"标记
+            const allCards = column.querySelectorAll(`.word-card.${groupName}`);
+            allCards.forEach(card => card.classList.remove('new'));
+
+            // 直接创建并添加新卡片（无动画）
+            const newCard = createWordCard(newWord, false, groupName, true);
+            column.appendChild(newCard);
+
+            // 直接滚动到底部
+            column.scrollTop = column.scrollHeight;
+        }
+
+        // 更新中间列（无补位动画，直接重新渲染）
+        function updatePendingColumn() {
+            const column = columns.pending;
+            const words = wordData.pending;
+
+            column.innerHTML = '';
+            column.appendChild(createColumnTitle('pending'));
+
+            words.forEach((wordObj, index) => {
+                const isActive = index === currentIndex;
+                const card = createWordCard(wordObj, isActive, 'pending', false);
+                column.appendChild(card);
+            });
+
+            scrollToActiveCard();
+        }
+
+        // 更新左右列（无动画，直接重新渲染）
+        function updateSideColumn(groupName) {
+            const column = columns[groupName];
+            const words = wordData[groupName];
+
+            column.innerHTML = '';
+            column.appendChild(createColumnTitle(groupName));
+
+            words.forEach((wordObj, index) => {
+                const isLatest = index === words.length - 1;
+                const card = createWordCard(wordObj, false, groupName, isLatest);
+                column.appendChild(card);
+            });
+
+            column.scrollTop = column.scrollHeight;
+        }
+
+        // 更新计数
+        function updateCounts() {
+            counts.mastered.textContent = wordData.mastered.length;
+            counts.pending.textContent = wordData.pending.length;
+            counts.untrained.textContent = wordData.untrained.length;
+
+            document.querySelectorAll('.column-title').forEach(title => {
+                if (title.innerHTML.includes('已牢记')) {
+                    title.innerHTML = `已牢记 <span class="count-badge">${wordData.mastered.length}</span>`;
+                } else if (title.innerHTML.includes('待记忆')) {
+                    title.innerHTML = `待记忆 <span class="count-badge">${wordData.untrained.length}</span>`;
+                } else if (title.innerHTML.includes('待巩固')) {
+                    title.innerHTML = `待巩固 <span class="count-badge">${wordData.pending.length}</span>`;
+                }
+            });
+        }
+
+        // 高亮当前选中单词（无动画，直接切换类）
+        function highlightActiveCard() {
+            const pendingCards = columns.pending.querySelectorAll('.word-card.pending');
+            pendingCards.forEach((card, index) => {
+                if (index === currentIndex) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+        }
+
+        // 滚动到选中单词（无平滑滚动，直接定位）
+        function scrollToActiveCard() {
+            const activeCard = columns.pending.querySelector('.word-card.pending.active');
+            if (!activeCard) return;
+
+            const column = columns.pending;
+            const columnHeight = column.clientHeight;
+            const cardTop = activeCard.offsetTop;
+            column.scrollTop = cardTop - columnHeight * (2/3); // 直接定位到2/3位置
+        }
+
+        // 滚动自动选中功能（保留，无动画）
+        function bindScrollAutoSelect() {
+            const pendingColumn = columns.pending;
+            pendingColumn.addEventListener('scroll', () => {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    const cards = pendingColumn.querySelectorAll('.word-card.pending');
+                    if (cards.length === 0) return;
+
+                    const columnRect = pendingColumn.getBoundingClientRect();
+                    const columnHeight = columnRect.height;
+                    const targetY = columnRect.top + columnHeight * (2/3);
+
+                    let closestIndex = currentIndex;
+                    let minDistance = Infinity;
+
+                    cards.forEach((card, index) => {
+                        const cardRect = card.getBoundingClientRect();
+                        const cardCenterY = cardRect.top + cardRect.height / 2;
+                        const distance = Math.abs(cardCenterY - targetY);
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestIndex = index;
+                        }
+                    });
+
+                    if (closestIndex !== currentIndex) {
+                        currentIndex = closestIndex;
+                        highlightActiveCard();
+                        scrollToActiveCard();
+                    }
+                }, 300);
+            });
+        }
+
+        // 核心逻辑：无动画移动单词
+        function moveWord(fromGroup, toGroup, index) {
+            const word = wordData[fromGroup][index];
+            
+            // 直接更新数据
+            wordData[fromGroup].splice(index, 1);
+            wordData[toGroup].push(word);
+
+            // 更新左右列（无动画）
+            if (toGroup === 'mastered' || toGroup === 'untrained') {
+                updateSideColumn(toGroup);
+            }
+
+            // 更新中间列索引和渲染（无动画）
+            if (wordData.pending.length > 0) {
+                currentIndex = Math.min(index, wordData.pending.length - 1);
+                updatePendingColumn();
+            } else {
+                currentIndex = 0;
+                updatePendingColumn();
+            }
+
+            updateCounts();
+        }
+
+        // 绑定键盘事件
+        function bindKeyboardEvents() {
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+                const pendingLen = wordData.pending.length;
+                if (pendingLen === 0) return;
+
+                switch (e.key) {
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        moveWord('pending', 'mastered', currentIndex);
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        moveWord('pending', 'untrained', currentIndex);
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        if (currentIndex > 0) {
+                            currentIndex--;
+                            highlightActiveCard();
+                            scrollToActiveCard();
+                        }
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        if (currentIndex < pendingLen - 1) {
+                            currentIndex++;
+                            highlightActiveCard();
+                            scrollToActiveCard();
+                        }
+                        break;
+                }
+            });
+        }
+
+        // 页面加载初始化
+        window.onload = init;
+    </script>
+</body>
+</html>

@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词分类工具（样式优化版）</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="grid-container">
+        <!-- 左列：已牢记 -->
+        <div class="column" id="masteredColumn">
+            <div class="column-title">
+                ✅ 已牢记 <span id="masteredCount" class="count-badge">0</span>
+            </div>
+            <div class="empty-state" id="masteredEmpty">
+                暂无单词<br>按←键移动至此
+            </div>
+        </div>
+
+        <!-- 中间列：待巩固（核心交互区） -->
+        <div class="column" id="pendingColumn">
+            <div class="column-title">
+                📚 待巩固 <span id="pendingCount" class="count-badge">0</span>
+            </div>
+            <!-- 新增控制栏（匹配参考样式） -->
+            <div class="control-bar">
+                <button class="btn" id="toggleMeaningBtn" disabled>隐藏释义</button>
+                <button class="btn reset" id="shuffleBtn" disabled>随机顺序</button>
+            </div>
+            <div class="empty-state" id="pendingEmpty">
+                加载中... 请稍候
+            </div>
+        </div>
+
+        <!-- 右列：待记忆 -->
+        <div class="column" id="untrainedColumn">
+            <div class="column-title">
+                📝 待记忆 <span id="untrainedCount" class="count-badge">0</span>
+            </div>
+            <div class="empty-state" id="untrainedEmpty">
+                暂无单词<br>按→键移动至此
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作提示 -->
+    <div class="control-tip">
+        ↑↓ 切换选中（自动定位2/3处） | ← 移至已牢记 | → 移至待记忆 | 空格/Enter 下一个
+    </div>
+
+    <script>
+        // 全局状态（保留核心逻辑，新增释义和随机功能）
+        let currentIndex = 0;
+        let scrollTimeout = null;
+        let isMeaningHidden = false; // 新增：控制释义显示/隐藏
+        const wordData = {
+            mastered: [],
+            pending: [],
+            untrained: []
+        };
+
+        // DOM元素缓存（新增控制按钮）
+        const dom = {
+            columns: {
+                mastered: document.getElementById('masteredColumn'),
+                pending: document.getElementById('pendingColumn'),
+                untrained: document.getElementById('untrainedColumn')
+            },
+            empties: {
+                mastered: document.getElementById('masteredEmpty'),
+                pending: document.getElementById('pendingEmpty'),
+                untrained: document.getElementById('untrainedEmpty')
+            },
+            counts: {
+                mastered: document.getElementById('masteredCount'),
+                pending: document.getElementById('pendingCount'),
+                untrained: document.getElementById('untrainedCount')
+            },
+            controls: {
+                toggleMeaning: document.getElementById('toggleMeaningBtn'),
+                shuffle: document.getElementById('shuffleBtn')
+            }
+        };
+
+        // 初始化入口（保留核心逻辑，新增控制按钮激活）
+        async function initApp() {
+            try {
+                const response = await fetch('./Vocabulary.json');
+                if (!response.ok) throw new Error(`JSON加载失败（状态码：${response.status}）`);
+                const allWords = await response.json();
+                wordData.pending = [...allWords];
+
+                // 初始化渲染+绑定事件
+                renderColumn('mastered');
+                renderColumn('untrained');
+                renderColumn('pending');
+                updateCounts();
+                bindKeyboardEvents();
+                bindScrollSelectClosest();
+                bindControlEvents(); // 新增：绑定控制按钮事件
+                window.addEventListener('resize', () => {
+                    if (wordData.pending.length > 0) {
+                        scrollToTwoThirds(currentIndex);
+                    }
+                });
+
+                // 激活控制按钮
+                dom.controls.toggleMeaning.disabled = false;
+                dom.controls.shuffle.disabled = false;
+
+                // 初始选中+定位
+                if (wordData.pending.length > 0) {
+                    highlightActiveCard(currentIndex);
+                    scrollToTwoThirds(currentIndex);
+                }
+            } catch (error) {
+                dom.empties.pending.innerHTML = `
+                    <div class="empty-state">
+                        ❌ 初始化失败<br>
+                        ${error.message}<br>
+                        请检查JSON文件路径和格式
+                    </div>
+                `;
+                console.error('错误详情：', error);
+            }
+        }
+
+        /**
+         * 渲染指定列（更新卡片结构，支持释义显示）
+         */
+        function renderColumn(group) {
+            const column = dom.columns[group];
+            const emptyEl = dom.empties[group];
+            const words = wordData[group];
+
+            column.innerHTML = '';
+
+            // 空状态处理
+            if (words.length === 0) {
+                emptyEl.style.display = 'block';
+                column.appendChild(emptyEl);
+                // 中间列保留控制栏
+                if (group === 'pending') {
+                    const title = createColumnTitle(group);
+                    const controlBar = createControlBar();
+                    column.prepend(controlBar);
+                    column.prepend(title);
+                }
+                return;
+            }
+            emptyEl.style.display = 'none';
+
+            // 添加列标题
+            const title = createColumnTitle(group);
+            column.appendChild(title);
+
+            // 中间列添加控制栏
+            if (group === 'pending') {
+                const controlBar = createControlBar();
+                column.appendChild(controlBar);
+            }
+
+            // 渲染单词卡片（支持释义）
+            words.forEach((wordObj, index) => {
+                const isActive = group === 'pending' && index === currentIndex;
+                const isLatest = (group === 'mastered' || group === 'untrained') && index === words.length - 1;
+                const card = createWordCard(wordObj, isActive, group, isLatest);
+                column.appendChild(card);
+            });
+
+            // 左右列滚动到底部
+            if (group !== 'pending') {
+                column.scrollTop = column.scrollHeight;
+            }
+
+            // 恢复释义隐藏状态
+            if (group === 'pending' && isMeaningHidden) {
+                hideMeanings();
+            }
+        }
+
+        // 新增：创建控制栏
+        function createControlBar() {
+            const bar = document.createElement('div');
+            bar.className = 'control-bar';
+            bar.innerHTML = `
+                <button class="btn" id="toggleMeaningBtn">${isMeaningHidden ? '显示释义' : '隐藏释义'}</button>
+                <button class="btn reset" id="shuffleBtn">随机顺序</button>
+            `;
+            // 重新绑定事件（避免渲染后失效）
+            bar.querySelector('#toggleMeaningBtn').addEventListener('click', toggleMeanings);
+            bar.querySelector('#shuffleBtn').addEventListener('click', shuffleWords);
+            return bar;
+        }
+
+        /**
+         * 创建单词卡片（更新为带释义的结构）
+         */
+        function createWordCard(wordObj, isActive, group, isLatest) {
+            const card = document.createElement('div');
+            let cardClass = `word-card ${group}`;
+            if (isActive) cardClass += ' active';
+            if (isLatest) cardClass += ' new';
+            card.className = cardClass;
+            if (group === 'pending') card.dataset.controlled = 'true'; // 标记中间列卡片可控制释义
+
+            // 构建释义HTML（支持多释义和词性）
+            let translationsHtml = '<div class="translations-container">';
+            const translations = Array.isArray(wordObj.translations) ? wordObj.translations : [];
+            
+            if (translations.length === 0) {
+                translationsHtml += `
+                    <div class="translation-item">
+                        <span class="meaning">无释义</span>
+                        <span class="pos-tag">未知</span>
+                    </div>
+                `;
+            } else {
+                translations.forEach(trans => {
+                    const meaning = trans.translation || '无释义';
+                    const pos = trans.type || '未知';
+                    translationsHtml += `
+                        <div class="translation-item">
+                            <span class="meaning">${meaning}</span>
+                            <span class="pos-tag">${pos}</span>
+                        </div>
+                    `;
+                });
+            }
+            translationsHtml += '</div>';
+
+            // 卡片内容（单词+释义）
+            card.innerHTML = `
+                <div class="word-header">
+                    <div class="word">${wordObj.word || '无单词'}</div>
+                </div>
+                ${translationsHtml}
+            `;
+
+            return card;
+        }
+
+        // 新增：切换释义显示/隐藏
+        function toggleMeanings() {
+            isMeaningHidden = !isMeaningHidden;
+            if (isMeaningHidden) {
+                hideMeanings();
+                dom.controls.toggleMeaning.textContent = '显示释义';
+            } else {
+                showMeanings();
+                dom.controls.toggleMeaning.textContent = '隐藏释义';
+            }
+        }
+
+        // 新增：隐藏中间列释义
+        function hideMeanings() {
+            const meanings = dom.columns.pending.querySelectorAll('[data-controlled="true"] .meaning');
+            meanings.forEach(mean => mean.classList.add('hidden'));
+        }
+
+        // 新增：显示中间列释义
+        function showMeanings() {
+            const meanings = dom.columns.pending.querySelectorAll('[data-controlled="true"] .meaning');
+            meanings.forEach(mean => mean.classList.remove('hidden'));
+        }
+
+        // 新增：随机打乱中间列单词
+        function shuffleWords() {
+            if (wordData.pending.length <= 1) return;
+            // 洗牌算法打乱顺序
+            for (let i = wordData.pending.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [wordData.pending[i], wordData.pending[j]] = [wordData.pending[j], wordData.pending[i]];
+            }
+            currentIndex = 0; // 重置选中索引
+            renderColumn('pending');
+            highlightActiveCard(currentIndex);
+            scrollToTwoThirds(currentIndex);
+        }
+
+        /**
+         * 绑定控制按钮事件
+         */
+        function bindControlEvents() {
+            dom.controls.toggleMeaning.addEventListener('click', toggleMeanings);
+            dom.controls.shuffle.addEventListener('click', shuffleWords);
+        }
+
+        // 以下为保留的核心逻辑（高亮、滚动、键盘事件等）
+        function createColumnTitle(group) {
+            const title = document.createElement('div');
+            title.className = 'column-title';
+            const count = wordData[group].length;
+            const titleText = {
+                mastered: '✅ 已牢记',
+                pending: '📚 待巩固',
+                untrained: '📝 待记忆'
+            }[group];
+            // 中间列显示“当前/总数”格式
+            const countText = group === 'pending' && count > 0 
+                ? `${currentIndex + 1} | ${count}` 
+                : count;
+            title.innerHTML = `${titleText} <span class="count-badge">${countText}</span>`;
+            return title;
+        }
+
+        function highlightActiveCard(index) {
+            const cards = dom.columns.pending.querySelectorAll('.word-card.pending');
+            cards.forEach(card => card.classList.remove('active'));
+            if (cards[index]) {
+                cards[index].classList.add('active');
+            }
+        }
+
+        function scrollToTwoThirds(index) {
+            const column = dom.columns.pending;
+            const cards = column.querySelectorAll('.word-card.pending');
+            const targetCard = cards[index];
+            if (!targetCard) return;
+
+            const columnHeight = column.clientHeight;
+            const cardTop = targetCard.offsetTop;
+            column.scrollTop = cardTop - columnHeight * (2/3);
+        }
+
+        function bindScrollSelectClosest() {
+            const column = dom.columns.pending;
+            column.addEventListener('scroll', () => {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    const cards = column.querySelectorAll('.word-card.pending');
+                    if (cards.length === 0) return;
+
+                    const columnRect = column.getBoundingClientRect();
+                    const twoThirdsY = columnRect.top + columnRect.height * (2/3);
+
+                    let closestIndex = currentIndex;
+                    let minDistance = Infinity;
+                    cards.forEach((card, index) => {
+                        const cardCenterY = card.getBoundingClientRect().top + card.offsetHeight / 2;
+                        const distance = Math.abs(cardCenterY - twoThirdsY);
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestIndex = index;
+                        }
+                    });
+
+                    if (closestIndex !== currentIndex) {
+                        currentIndex = closestIndex;
+                        highlightActiveCard(currentIndex);
+                        updateCounts(); // 同步更新计数
+                    }
+                }, 50);
+            });
+        }
+
+        function bindKeyboardEvents() {
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+                const pendingLen = wordData.pending.length;
+                if (pendingLen === 0) return;
+
+                switch (e.key) {
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        moveWord('pending', 'mastered', currentIndex);
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        moveWord('pending', 'untrained', currentIndex);
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        if (currentIndex > 0) {
+                            currentIndex--;
+                            highlightActiveCard(currentIndex);
+                            scrollToTwoThirds(currentIndex);
+                            updateCounts();
+                        }
+                        break;
+                    case 'ArrowDown':
+                    case ' ':
+                    case 'Enter':
+                        e.preventDefault();
+                        if (currentIndex < pendingLen - 1) {
+                            currentIndex++;
+                            highlightActiveCard(currentIndex);
+                            scrollToTwoThirds(currentIndex);
+                            updateCounts();
+                        }
+                        break;
+                }
+            });
+        }
+
+        function moveWord(from, to, index) {
+            const [movedWord] = wordData[from].splice(index, 1);
+            wordData[to].push(movedWord);
+
+            renderColumn(to);
+
+            if (wordData.pending.length > 0) {
+                currentIndex = Math.min(index, wordData.pending.length - 1);
+                renderColumn('pending');
+                highlightActiveCard(currentIndex);
+                scrollToTwoThirds(currentIndex);
+            } else {
+                currentIndex = 0;
+                renderColumn('pending');
+            }
+
+            updateCounts();
+        }
+
+        function updateCounts() {
+            dom.counts.mastered.textContent = wordData.mastered.length;
+            dom.counts.untrained.textContent = wordData.untrained.length;
+            // 中间列显示“当前/总数”
+            const pendingLen = wordData.pending.length;
+            dom.counts.pending.textContent = pendingLen > 0 
+                ? `${currentIndex + 1} | ${pendingLen}` 
+                : '0';
+        }
+
+        window.addEventListener('load', initApp);
+    </script>
+</body>
+</html>

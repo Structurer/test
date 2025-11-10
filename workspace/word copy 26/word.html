@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>卡片顶部2/3位置+滑动效果（终极修复版）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: sans-serif;
+        }
+
+        body {
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+            height: calc(100vh - 40px);
+        }
+
+        .column {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .column-header {
+            padding: 16px;
+            background-color: #4299e1;
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .count-badge {
+            background-color: rgba(255,255,255,0.3);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .column-content {
+            padding: 16px;
+            overflow-y: auto;
+            height: calc(100% - 50px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 卡片样式 + 核心动画 */
+        .word-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            font-size: 18px;
+            color: #2d3748;
+            cursor: default;
+            width: 100%;
+            max-width: 500px;
+            opacity: 1;
+        }
+
+        .word-card.active {
+            border: 2px solid #4299e1;
+            box-shadow: 0 0 0 2px rgba(66,153,225,0.2), 0 4px 12px rgba(0,0,0,0.1);
+            background-color: #f8fafe;
+        }
+
+        /* 滑出动画 */
+        .card-slide-out-left {
+            transform: translateX(-120%) scale(0.9);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .card-slide-out-right {
+            transform: translateX(120%) scale(0.9);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* 滑入动画 */
+        .card-slide-in-up {
+            animation: slideInUp 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(100px) scale(0.95);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* 空状态/加载状态 */
+        .empty-state, .loading-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #999;
+            font-size: 16px;
+            line-height: 1.8;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .loading-state {
+            color: #666;
+        }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 3px;
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .column {
+                height: 500px;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 左列：已牢记 -->
+        <div class="column">
+            <div class="column-header">
+                <span>已牢记</span>
+                <span id="masteredCount" class="count-badge">0</span>
+            </div>
+            <div id="masteredList" class="column-content">
+                <div class="empty-state">暂无单词<br>按←键将中间单词移至此处</div>
+            </div>
+        </div>
+
+        <!-- 中列：待巩固（核心演示区） -->
+        <div class="column">
+            <div class="column-header">
+                <span>待巩固（卡片顶部对齐2/3位置）</span>
+                <span id="reviewCount" class="count-badge">0</span>
+            </div>
+            <div id="reviewContent" class="column-content">
+                <div id="wordList" class="loading-state">加载中... 请稍候</div>
+            </div>
+        </div>
+
+        <!-- 右列：待记忆 -->
+        <div class="column">
+            <div class="column-header">
+                <span>待记忆</span>
+                <span id="untrainedCount" class="count-badge">0</span>
+            </div>
+            <div id="untrainedList" class="column-content">
+                <div class="empty-state">暂无单词<br>按→键将中间单词移至此处</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 核心变量
+        let currentIndex = 0;
+        let isAnimating = false;
+        let allWords = [];
+        let remainingWords = [];
+
+        // DOM 元素
+        const wordListEl = document.getElementById('wordList');
+        const reviewContent = document.getElementById('reviewContent');
+        const masteredList = document.getElementById('masteredList');
+        const untrainedList = document.getElementById('untrainedList');
+        const reviewCountEl = document.getElementById('reviewCount');
+        const masteredCountEl = document.getElementById('masteredCount');
+        const untrainedCountEl = document.getElementById('untrainedCount');
+
+        // 初始化
+        async function init() {
+            try {
+                const response = await fetch('Vocabulary.json');
+                if (!response.ok) throw new Error('文件加载失败');
+                allWords = await response.json();
+                remainingWords = [...allWords];
+                renderWordList();
+                updateCounts();
+                bindKeyboardEvents();
+                setTimeout(() => {
+                    if (remainingWords.length > 0) {
+                        updateActiveCard();
+                        centerActiveCard(false);
+                    }
+                }, 100);
+            } catch (error) {
+                wordListEl.innerHTML = `<div class="empty-state">❌ 加载失败<br>请检查 Vocabulary.json 是否存在</div>`;
+                console.error('加载错误：', error);
+            }
+        }
+
+        // 渲染单词列表（仅根据remainingWords和currentIndex渲染，不绑定额外索引）
+        function renderWordList() {
+            if (remainingWords.length === 0) {
+                wordListEl.innerHTML = '<div class="empty-state">🎉 所有单词已分类完成！</div>';
+                return;
+            }
+
+            let html = '';
+            remainingWords.forEach((wordObj, index) => {
+                const word = wordObj.word || '无单词';
+                html += `<div class="word-card ${index === currentIndex ? 'active' : ''}">${word}</div>`;
+            });
+            wordListEl.innerHTML = html;
+        }
+
+        // 更新计数
+        function updateCounts() {
+            reviewCountEl.textContent = remainingWords.length;
+            masteredCountEl.textContent = document.querySelectorAll('#masteredList .word-card').length;
+            untrainedCountEl.textContent = document.querySelectorAll('#untrainedList .word-card').length;
+        }
+
+        // 绑定键盘事件
+        function bindKeyboardEvents() {
+            document.addEventListener('keydown', (e) => {
+                if (isAnimating || remainingWords.length === 0) return;
+
+                switch (e.key) {
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        slideAndMoveCard('left', masteredList);
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        slideAndMoveCard('right', untrainedList);
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        if (currentIndex > 0) {
+                            currentIndex--;
+                            updateActiveCard();
+                            centerActiveCard(true);
+                        }
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        if (currentIndex < remainingWords.length - 1) {
+                            currentIndex++;
+                            updateActiveCard();
+                            centerActiveCard(true);
+                        }
+                        break;
+                }
+            });
+        }
+
+        // 终极修复：滑动+移动逻辑（直接操作currentIndex对应的卡片，不依赖额外索引）
+        function slideAndMoveCard(direction, targetList) {
+            isAnimating = true;
+            const oldIndex = currentIndex;
+            const currentWordObj = remainingWords[oldIndex];
+            // 直接获取当前高亮的卡片（无需data-index，精准对应currentIndex）
+            const currentCard = document.querySelector('.word-card.active');
+
+            // 1. 旧卡片滑出动画（必触发）
+            currentCard.classList.add(`card-slide-out-${direction}`);
+
+            // 2. 计算新索引（滑动后，下一个卡片成为高亮）
+            let newIndex = oldIndex;
+            if (remainingWords.length > 1) {
+                // 如果不是最后一个单词，新索引=旧索引（下一个卡片顶上来，索引不变）
+                // 如果是最后一个单词，新索引=旧索引-1（前一个卡片成为高亮）
+                newIndex = (oldIndex === remainingWords.length - 1) ? oldIndex - 1 : oldIndex;
+            }
+            currentIndex = newIndex;
+
+            // 3. 动画中期（200ms）：更新数据+渲染新列表
+            setTimeout(() => {
+                // 从中间列移除当前单词（精准删除oldIndex对应的单词）
+                remainingWords.splice(oldIndex, 1);
+
+                // 添加到目标列
+                const targetCard = document.createElement('div');
+                targetCard.className = 'word-card';
+                targetCard.textContent = currentWordObj.word || '无单词';
+                targetList.appendChild(targetCard);
+                targetList.scrollTop = targetList.scrollHeight;
+
+                // 重新渲染中间列
+                renderWordList();
+
+                // 给新高亮卡片加滑入动画（渲染后直接获取active卡片）
+                if (remainingWords.length > 0) {
+                    const newActiveCard = document.querySelector('.word-card.active');
+                    if (newActiveCard) {
+                        newActiveCard.classList.add('card-slide-in-up');
+                        // 滑入后定位到2/3处
+                        setTimeout(() => centerActiveCard(false), 50);
+                    }
+                }
+            }, 200);
+
+            // 4. 动画结束（400ms）：重置状态
+            setTimeout(() => {
+                currentCard.classList.remove(`card-slide-out-${direction}`);
+                const newActiveCard = document.querySelector('.word-card.active');
+                newActiveCard?.classList.remove('card-slide-in-up');
+                updateCounts();
+                isAnimating = false;
+            }, 400);
+        }
+
+        // 更新高亮（确保currentIndex和active卡片严格对应）
+        function updateActiveCard() {
+            document.querySelectorAll('.word-card').forEach((card, index) => {
+                card.classList.toggle('active', index === currentIndex);
+            });
+        }
+
+        // 卡片顶部对齐容器2/3处（公式正确）
+        function centerActiveCard(useSmooth = false) {
+            const activeCard = document.querySelector('.word-card.active');
+            if (!activeCard) return;
+
+            const scrollContainer = reviewContent;
+            const containerHeight = scrollContainer.clientHeight;
+            const cardOffsetTop = activeCard.offsetTop;
+
+            const targetScrollTop = cardOffsetTop - containerHeight * (2/3);
+            const finalScrollTop = Math.max(0, targetScrollTop);
+
+            if (useSmooth) {
+                scrollContainer.scrollTo({
+                    top: finalScrollTop,
+                    behavior: 'smooth'
+                });
+            } else {
+                scrollContainer.scrollTop = finalScrollTop;
+            }
+        }
+
+        // 启动
+        init();
+    </script>
+</body>
+</html>

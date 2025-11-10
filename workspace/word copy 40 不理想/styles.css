@@ -1,0 +1,226 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+}
+
+body {
+    padding: 20px;
+    background-color: #f5f5f5;
+    overflow: hidden;
+}
+
+/* 外层Grid布局：强制子列占满高度（关键） */
+.grid-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 20px;
+    height: calc(100vh - 40px);
+    grid-auto-rows: 100%; /* 强制所有Grid子列高度=容器高度 */
+}
+
+/* 列容器：Flex分层+占满Grid高度（关键） */
+.column {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    height: 100%; /* 确保占满Grid分配的100%高度 */
+}
+
+/* 列顶部固定区 */
+.column-header {
+    flex: 0 0 auto;
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.column-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #2d3748;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding-bottom: 8px;
+    border-radius: 8px;
+}
+
+.count-badge {
+    background-color: #f0f8fb;
+    color: #4299e1;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 14px;
+    margin-left: auto;
+    font-weight: normal;
+}
+
+/* 控制栏 */
+.control-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+.btn {
+    padding: 6px 12px;
+    font-size: 14px;
+    background-color: #4299e1;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.btn:hover {
+    background-color: #3182ce;
+}
+.btn.reset {
+    background-color: #dc3545;
+}
+.btn.reset:hover {
+    background-color: #c82333;
+}
+.btn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+/* 卡片滚动区（核心修复：左右列贴底+中间列2/3定位） */
+.card-list {
+    flex: 1; /* 占满列剩余高度 */
+    overflow-y: auto;
+    padding: 0;
+    width: 100%;
+    max-width: 500px;
+    align-self: center;
+    /* 左右列强制贴底：用margin-top auto推到固定区下方 */
+}
+/* 左右列卡片列表：强制贴底（关键） */
+#masteredCardList, #untrainedCardList {
+    margin-top: auto; /* 把卡片列表推到列的最下方 */
+}
+/* 中间列卡片列表：正常居中，确保2/3定位准确 */
+#pendingCardList {
+    margin-top: 0;
+}
+
+/* 滚动条样式 */
+.card-list::-webkit-scrollbar {
+    width: 6px;
+}
+.card-list::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+.card-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+.card-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* 单词卡片样式 */
+.word-card {
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    cursor: default;
+    transition: none;
+}
+
+.word-card.pending.active {
+    background-color: #e0f2fe;
+    border-color: #7dd3fc;
+    box-shadow: 0 2px 6px rgba(56, 189, 248, 0.15);
+}
+
+.word-card.mastered {
+    border-left: 4px solid #48bb78;
+}
+.word-card.mastered.new {
+    background-color: #f0fdf4;
+    border-color: #34d399;
+    box-shadow: 0 2px 8px rgba(52, 211, 153, 0.1);
+}
+
+.word-card.untrained {
+    border-left: 4px solid #ed8936;
+}
+.word-card.untrained.new {
+    background-color: #fef3c7;
+    border-color: #fbbf24;
+    box-shadow: 0 2px 8px rgba(251, 191, 36, 0.1);
+}
+
+/* 释义样式 */
+.word-header {
+    margin-bottom: 8px;
+}
+.word {
+    font-size: 18px;
+    font-weight: bold;
+    color: #2d3748;
+}
+.translations-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.translation-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+.meaning {
+    color: #4a5568;
+}
+.meaning.hidden {
+    display: none;
+}
+.pos-tag {
+    background-color: #e8f4f8;
+    color: #2b6cb0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* 空状态样式 */
+.empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: #666;
+    font-size: 16px;
+    line-height: 1.8;
+    width: 100%;
+}
+
+/* 操作提示 */
+.control-tip {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #666;
+    font-size: 14px;
+    background: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}

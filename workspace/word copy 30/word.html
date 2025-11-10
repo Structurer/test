@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词分类工具（简洁消失补位版）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: sans-serif;
+        }
+
+        body {
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+
+        /* Grid三列布局（保持稳定） */
+        .grid-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+            height: calc(100vh - 40px);
+        }
+
+        .column {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .column-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #4299e1;
+            margin-bottom: 20px;
+            align-self: flex-start;
+        }
+
+        .count-badge {
+            background-color: rgba(66,153,225,0.1);
+            color: #4299e1;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-left: 8px;
+        }
+
+        /* 单词卡片（仅保留基础样式） */
+        .word-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 500px;
+            font-size: 18px;
+            color: #2d3748;
+            cursor: default;
+            transition: all 0.3s ease; /* 仅用于消失和补位动画 */
+        }
+
+        .word-card.pending.active {
+            border: 2px solid #4299e1;
+            box-shadow: 0 0 0 2px rgba(66,153,225,0.2), 0 4px 12px rgba(0,0,0,0.1);
+            background-color: #f8fafe;
+        }
+
+        .word-card.mastered {
+            border-left: 4px solid #48bb78;
+        }
+
+        .word-card.untrained {
+            border-left: 4px solid #ed8936;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #999;
+            font-size: 16px;
+            line-height: 1.8;
+            width: 100%;
+            max-width: 500px;
+            margin-top: 50px;
+        }
+
+        .control-tip {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #666;
+            font-size: 14px;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-container">
+        <!-- 左列：已牢记 -->
+        <div class="column" id="masteredColumn">
+            <div class="column-title">
+                已牢记 <span id="masteredCount" class="count-badge">0</span>
+            </div>
+            <div class="empty-state" id="masteredEmpty">
+                暂无单词<br>按←键移动至此
+            </div>
+        </div>
+
+        <!-- 中列：待巩固（核心操作区） -->
+        <div class="column" id="pendingColumn">
+            <div class="column-title">
+                待巩固 <span id="pendingCount" class="count-badge">0</span>
+            </div>
+            <div class="empty-state" id="pendingEmpty">
+                加载中... 请稍候
+            </div>
+        </div>
+
+        <!-- 右列：待记忆 -->
+        <div class="column" id="untrainedColumn">
+            <div class="column-title">
+                待记忆 <span id="untrainedCount" class="count-badge">0</span>
+            </div>
+            <div class="empty-state" id="untrainedEmpty">
+                暂无单词<br>按→键移动至此
+            </div>
+        </div>
+    </div>
+
+    <div class="control-tip">
+        ↑↓ 切换待巩固单词 | ← 移至已牢记 | → 移至待记忆 | 简洁消失补位效果
+    </div>
+
+    <script>
+        let currentIndex = 0;
+        let isAnimating = false;
+        const wordData = {
+            mastered: [],
+            pending: [],
+            untrained: []
+        };
+
+        const columns = {
+            mastered: document.getElementById('masteredColumn'),
+            pending: document.getElementById('pendingColumn'),
+            untrained: document.getElementById('untrainedColumn')
+        };
+        const empties = {
+            mastered: document.getElementById('masteredEmpty'),
+            pending: document.getElementById('pendingEmpty'),
+            untrained: document.getElementById('untrainedEmpty')
+        };
+        const counts = {
+            mastered: document.getElementById('masteredCount'),
+            pending: document.getElementById('pendingCount'),
+            untrained: document.getElementById('untrainedCount')
+        };
+
+        // 初始化加载JSON
+        async function init() {
+            try {
+                const response = await fetch('Vocabulary.json');
+                if (!response.ok) throw new Error(`文件加载失败（状态码：${response.status}）`);
+                const allWords = await response.json();
+                wordData.pending = [...allWords];
+
+                updateAllColumns();
+                updateCounts();
+                bindKeyboardEvents();
+
+                if (wordData.pending.length > 0) {
+                    highlightActiveCard();
+                    scrollToActiveCard();
+                }
+            } catch (error) {
+                empties.pending.innerHTML = `
+                    <div class="empty-state">
+                        ❌ 加载失败<br>
+                        ${error.message}<br>
+                        请检查JSON文件路径和格式
+                    </div>
+                `;
+                console.error('初始化错误：', error);
+            }
+        }
+
+        // 更新所有列
+        function updateAllColumns() {
+            renderColumn('mastered');
+            renderColumn('pending');
+            renderColumn('untrained');
+        }
+
+        // 渲染列（无任何入场动画，简洁直接）
+        function renderColumn(groupName) {
+            const words = wordData[groupName];
+            const column = columns[groupName];
+            const empty = empties[groupName];
+
+            // 显示/隐藏空状态
+            if (words.length === 0) {
+                empty.style.display = 'block';
+                return;
+            }
+            empty.style.display = 'none';
+
+            // 清空现有卡片
+            const cards = column.querySelectorAll('.word-card');
+            cards.forEach(card => card.remove());
+
+            // 渲染卡片（无动画，直接显示）
+            words.forEach((wordObj, index) => {
+                const card = document.createElement('div');
+                card.className = `word-card ${groupName} ${groupName === 'pending' && index === currentIndex ? 'active' : ''}`;
+                card.textContent = wordObj.word || '无单词';
+                card.dataset.index = index;
+                column.appendChild(card);
+            });
+
+            // 左右列自动滚动到底部（显示最新单词）
+            if (groupName !== 'pending') {
+                column.scrollTop = column.scrollHeight;
+            }
+        }
+
+        // 更新计数
+        function updateCounts() {
+            counts.mastered.textContent = wordData.mastered.length;
+            counts.pending.textContent = wordData.pending.length;
+            counts.untrained.textContent = wordData.untrained.length;
+        }
+
+        // 高亮当前选中单词
+        function highlightActiveCard() {
+            const pendingCards = columns.pending.querySelectorAll('.word-card.pending');
+            pendingCards.forEach((card, index) => {
+                card.classList.toggle('active', index === currentIndex);
+            });
+        }
+
+        // 滚动到选中单词
+        function scrollToActiveCard() {
+            const activeCard = columns.pending.querySelector('.word-card.pending.active');
+            if (!activeCard) return;
+
+            const column = columns.pending;
+            const cardTop = activeCard.offsetTop;
+            const columnHeight = column.clientHeight;
+            column.scrollTop = cardTop - columnHeight * (2/3);
+        }
+
+        // 核心逻辑：取消移动动画，改为「消失+补位」
+        function moveWord(fromGroup, toGroup, index) {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            const word = wordData[fromGroup][index];
+            const originalCard = columns[fromGroup].querySelector(`.word-card[data-index="${index}"]`);
+            const pendingCards = columns.pending.querySelectorAll('.word-card.pending');
+
+            // 1. 中间列选中卡片消失动画（透明+缩小）
+            originalCard.style.opacity = '0';
+            originalCard.style.transform = 'scale(0.95)';
+            originalCard.style.height = `${originalCard.offsetHeight}px`; // 固定高度，避免布局抖动
+
+            // 2. 中间列下方卡片向上补位动画
+            const cardsToPushUp = [];
+            pendingCards.forEach((card, cardIndex) => {
+                if (cardIndex > index) { // 仅下方卡片补位
+                    cardsToPushUp.push(card);
+                    // 记录初始位置，准备向上移动
+                    card.style.transition = 'transform 0.3s ease';
+                    card.style.transform = `translateY(${originalCard.offsetHeight + 12}px)`; // 初始向下偏移（卡片高度+间距）
+                }
+            });
+
+            // 3. 触发补位动画（下方卡片向上移动到原位置）
+            setTimeout(() => {
+                cardsToPushUp.forEach(card => {
+                    card.style.transform = 'translateY(0)';
+                });
+            }, 50);
+
+            // 4. 动画结束后更新数据+重新渲染
+            setTimeout(() => {
+                // 数据更新：移除原单词，添加到目标列
+                wordData[fromGroup].splice(index, 1);
+                wordData[toGroup].push(word);
+
+                // 重新渲染所有列（无动画，直接更新）
+                updateAllColumns();
+                updateCounts();
+
+                // 更新选中索引（补位后选中下一个或最后一个）
+                if (wordData.pending.length > 0) {
+                    currentIndex = Math.min(index, wordData.pending.length - 1);
+                    highlightActiveCard();
+                    scrollToActiveCard();
+                }
+
+                isAnimating = false;
+            }, 300); // 与消失+补位动画时间一致
+        }
+
+        // 绑定键盘操作
+        function bindKeyboardEvents() {
+            document.addEventListener('keydown', (e) => {
+                const pendingLen = wordData.pending.length;
+                if (isAnimating || pendingLen === 0) return;
+
+                switch (e.key) {
+                    case 'ArrowLeft': // 移至已牢记
+                        e.preventDefault();
+                        moveWord('pending', 'mastered', currentIndex);
+                        break;
+                    case 'ArrowRight': // 移至待记忆
+                        e.preventDefault();
+                        moveWord('pending', 'untrained', currentIndex);
+                        break;
+                    case 'ArrowUp': // 上一个单词
+                        e.preventDefault();
+                        if (currentIndex > 0) {
+                            currentIndex--;
+                            highlightActiveCard();
+                            scrollToActiveCard();
+                        }
+                        break;
+                    case 'ArrowDown': // 下一个单词
+                        e.preventDefault();
+                        if (currentIndex < pendingLen - 1) {
+                            currentIndex++;
+                            highlightActiveCard();
+                            scrollToActiveCard();
+                        }
+                        break;
+                }
+            });
+        }
+
+        // 启动应用
+        init();
+    </script>
+</body>
+</html>
