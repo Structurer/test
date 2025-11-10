@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词分类工具（完美版）</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="grid-container">
+        <!-- 左列：已牢记 -->
+        <div class="column" id="masteredColumn">
+            <div class="column-title">
+                已牢记 <span id="masteredCount" class="count-badge">0</span>
+            </div>
+            <div class="content-area">
+                <div class="empty-state" id="masteredEmpty">
+                    暂无单词<br>按←键移动至此
+                </div>
+            </div>
+        </div>
+
+        <!-- 中间列：待巩固（核心交互区） -->
+        <div class="column" id="pendingColumn">
+            <div class="column-title">
+                待巩固 <span id="pendingCount" class="count-badge">0</span>
+            </div>
+            <div class="content-area">
+                <div class="empty-state" id="pendingEmpty">
+                    加载中... 请稍候
+                </div>
+            </div>
+        </div>
+
+        <!-- 右列：待记忆 -->
+        <div class="column" id="untrainedColumn">
+            <div class="column-title">
+                待记忆 <span id="untrainedCount" class="count-badge">0</span>
+            </div>
+            <div class="content-area">
+                <div class="empty-state" id="untrainedEmpty">
+                    暂无单词<br>按→键移动至此
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局状态
+let currentIndex = 0;
+let scrollTimeout = null;
+let isKeydown = false; // 新增：标记是否处于键盘按下状态，避免滚动监听干扰
+const wordData = {
+    mastered: [],
+    pending: [],
+    untrained: []
+};
+
+// DOM元素缓存
+const dom = {
+    columns: {
+        mastered: document.getElementById('masteredColumn'),
+        pending: document.getElementById('pendingColumn'),
+        untrained: document.getElementById('untrainedColumn')
+    },
+    contentAreas: {
+        mastered: document.querySelector('#masteredColumn .content-area'),
+        pending: document.querySelector('#pendingColumn .content-area'),
+        untrained: document.querySelector('#untrainedColumn .content-area')
+    },
+    empties: {
+        mastered: document.getElementById('masteredEmpty'),
+        pending: document.getElementById('pendingEmpty'),
+        untrained: document.getElementById('untrainedEmpty')
+    },
+    counts: {
+        mastered: document.getElementById('masteredCount'),
+        pending: document.getElementById('pendingCount'),
+        untrained: document.getElementById('untrainedCount')
+    }
+};
+
+// 初始化入口
+async function initApp() {
+    try {
+        const response = await fetch('./Vocabulary.json');
+        if (!response.ok) throw new Error(`JSON加载失败（状态码：${response.status}）`);
+        const allWords = await response.json();
+        wordData.pending = [...allWords];
+
+        renderColumn('mastered');
+        renderColumn('untrained');
+        renderColumn('pending');
+        updateCounts();
+        bindKeyboardEvents();
+        bindScrollSelectClosest();
+        window.addEventListener('resize', () => {
+            if (wordData.pending.length > 0 && !isKeydown) {
+                scrollToTwoThirds(currentIndex);
+            }
+        });
+
+        if (wordData.pending.length > 0) {
+            highlightActiveCard(currentIndex);
+            scrollToTwoThirds(currentIndex);
+        }
+    } catch (error) {
+        dom.empties.pending.innerHTML = `
+            <div class="empty-state">
+                ❌ 初始化失败<br>
+                ${error.message}<br>
+                请检查JSON文件路径和格式
+            </div>
+        `;
+        dom.contentAreas.pending.appendChild(dom.empties.pending);
+        console.error('错误详情：', error);
+    }
+}
+
+/**
+ * 全量渲染列（仅用于初始化/无单词时）
+ */
+function renderColumn(group) {
+    const contentArea = dom.contentAreas[group];
+    const emptyEl = dom.empties[group];
+    const words = wordData[group];
+
+    contentArea.innerHTML = '';
+
+    if (words.length === 0) {
+        emptyEl.style.display = 'block';
+        contentArea.appendChild(emptyEl);
+        return;
+    }
+    emptyEl.style.display = 'none';
+
+    words.forEach((wordObj, index) => {
+        const isActive = group === 'pending' && index === currentIndex;
+        const isLatest = (group === 'mastered' || group === 'untrained') && index === words.length - 1;
+        const card = createWordCard(wordObj, isActive, group, isLatest);
+        contentArea.appendChild(card);
+    });
+
+    if (group !== 'pending') {
+        requestAnimationFrame(() => {
+            contentArea.scrollTop = contentArea.scrollHeight;
+        });
+    }
+}
+
+/**
+ * 仅添加新卡片（左右列专用，优化速度）
+ */
+function appendNewCard(group, wordObj) {
+    const contentArea = dom.contentAreas[group];
+    const isLatest = true;
+    const card = createWordCard(wordObj, false, group, isLatest);
+    contentArea.appendChild(card);
+    
+    // 移除左右列旧的“最新卡片”标记
+    const allCards = contentArea.querySelectorAll(`.word-card.${group}.new`);
+    if (allCards.length > 1) {
+        allCards[0].classList.remove('new');
+    }
+
+    requestAnimationFrame(() => {
+        contentArea.scrollTop = contentArea.scrollHeight;
+    });
+}
+
+/**
+ * 创建单词卡片（英文+释义+词性）
+ */
+function createWordCard(wordObj, isActive, group, isLatest) {
+    const card = document.createElement('div');
+    let cardClass = `word-card ${group}`;
+    if (isActive) cardClass += ' active';
+    if (isLatest) cardClass += ' new';
+    card.className = cardClass;
+
+    const word = wordObj.word || '无单词';
+    const translations = Array.isArray(wordObj.translations) ? wordObj.translations : [];
+
+    let translationsHtml = '';
+    if (translations.length === 0) {
+        translationsHtml = `
+            <div class="translation-item">
+                <span class="meaning">无释义</span>
+                <span class="pos-tag">未知</span>
+            </div>
+        `;
+    } else {
+        translations.forEach(item => {
+            const meaning = item.translation || '无释义';
+            const pos = item.type || '未知';
+            translationsHtml += `
+                <div class="translation-item">
+                    <span class="meaning">${meaning}</span>
+                    <span class="pos-tag">${pos}</span>
+                </div>
+            `;
+        });
+    }
+
+    card.innerHTML = `
+        <div class="word">${word}</div>
+        <div class="translations">${translationsHtml}</div>
+    `;
+
+    return card;
+}
+
+/**
+ * 高亮选中卡片（强制查询DOM，确保生效）
+ */
+function highlightActiveCard(index) {
+    // 修复：强制重新查询卡片DOM，避免缓存导致匹配失效
+    const contentArea = dom.contentAreas.pending;
+    const cards = contentArea.querySelectorAll('.word-card.pending');
+    
+    // 双重保障：先移除所有active，再给目标添加
+    cards.forEach(card => card.classList.remove('active'));
+    if (cards[index]) {
+        cards[index].classList.add('active');
+    }
+}
+
+/**
+ * 定位选中卡片到窗口2/3处（增加边界判断）
+ */
+function scrollToTwoThirds(index) {
+    const column = dom.columns.pending;
+    const contentArea = dom.contentAreas.pending;
+    const cards = contentArea.querySelectorAll('.word-card.pending');
+    const targetCard = cards[index];
+    if (!targetCard) return;
+
+    const columnHeight = column.clientHeight;
+    const twoThirdsY = columnHeight * (2/3);
+    const titleHeight = column.querySelector('.column-title').offsetHeight;
+    const cardTopInContent = targetCard.offsetTop;
+    const cardCenterYInContent = cardTopInContent + targetCard.offsetHeight / 2;
+    let contentScrollTop = cardCenterYInContent - (twoThirdsY - titleHeight);
+
+    // 修复：添加边界判断，避免滚动超出范围
+    contentScrollTop = Math.max(0, Math.min(contentScrollTop, contentArea.scrollHeight - contentArea.clientHeight));
+    contentArea.scrollTop = contentScrollTop;
+}
+
+/**
+ * 滚动监听（增加键盘状态判断，避免干扰）
+ */
+function bindScrollSelectClosest() {
+    const column = dom.columns.pending;
+    const contentArea = dom.contentAreas.pending;
+
+    contentArea.addEventListener('scroll', () => {
+        // 修复：键盘按下时，暂停滚动监听，避免回弹
+        if (isKeydown) return;
+        
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+            const cards = contentArea.querySelectorAll('.word-card.pending');
+            if (cards.length === 0) return;
+
+            const columnHeight = column.clientHeight;
+            const twoThirdsY = columnHeight * (2/3);
+            const titleHeight = column.querySelector('.column-title').offsetHeight;
+
+            let closestIndex = currentIndex;
+            let minDistance = Infinity;
+            cards.forEach((card, index) => {
+                const cardTopInColumn = titleHeight + card.offsetTop;
+                const cardCenterY = cardTopInColumn + card.offsetHeight / 2;
+                const distance = Math.abs(cardCenterY - twoThirdsY);
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestIndex = index;
+                }
+            });
+
+            if (closestIndex !== currentIndex) {
+                currentIndex = closestIndex;
+                highlightActiveCard(currentIndex);
+                scrollToTwoThirds(currentIndex);
+            }
+        }, 20);
+    });
+}
+
+/**
+ * 键盘事件（修复按下键逻辑+增加状态标记）
+ */
+function bindKeyboardEvents() {
+    document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        const pendingLen = wordData.pending.length;
+        if (pendingLen === 0) return;
+
+        e.preventDefault();
+        isKeydown = true; // 标记：键盘按下中
+
+        switch (e.key) {
+            case 'ArrowLeft':
+                moveWord('pending', 'mastered', currentIndex);
+                break;
+            case 'ArrowRight':
+                moveWord('pending', 'untrained', currentIndex);
+                break;
+            case 'ArrowUp':
+                if (currentIndex > 0) {
+                    currentIndex--;
+                    highlightActiveCard(currentIndex);
+                    scrollToTwoThirds(currentIndex);
+                }
+                break;
+            case 'ArrowDown':
+                // 修复：按下键时，索引递增到最大长度-1（避免超出范围）
+                if (currentIndex < pendingLen - 1) {
+                    currentIndex++;
+                    highlightActiveCard(currentIndex);
+                    scrollToTwoThirds(currentIndex);
+                }
+                break;
+        }
+    });
+
+    // 新增：键盘松开时，取消状态标记
+    document.addEventListener('keyup', () => {
+        isKeydown = false;
+    });
+
+    // 新增：键盘失去焦点时，取消状态标记
+    document.addEventListener('blur', () => {
+        isKeydown = false;
+    });
+}
+
+/**
+ * 移动单词（优化渲染，秒响应）
+ */
+function moveWord(from, to, index) {
+    const [movedWord] = wordData[from].splice(index, 1);
+    wordData[to].push(movedWord);
+
+    // 左右列仅添加新卡片，不重建
+    appendNewCard(to, movedWord);
+
+    // 中间列更新选中状态
+    if (wordData.pending.length > 0) {
+        const newIndex = Math.min(index, wordData.pending.length - 1);
+        if (newIndex !== currentIndex) {
+            currentIndex = newIndex;
+            highlightActiveCard(currentIndex);
+            scrollToTwoThirds(currentIndex);
+        }
+    } else {
+        renderColumn('pending');
+    }
+
+    updateCounts();
+}
+
+/**
+ * 更新计数（仅改文本，无DOM操作）
+ */
+function updateCounts() {
+    dom.counts.mastered.textContent = wordData.mastered.length;
+    dom.counts.pending.textContent = wordData.pending.length;
+    dom.counts.untrained.textContent = wordData.untrained.length;
+}
+
+// 页面加载完成后初始化
+window.addEventListener('load', initApp);
+    </script>
+</body>
+</html>

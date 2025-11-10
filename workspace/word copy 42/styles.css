@@ -1,0 +1,163 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+}
+
+body {
+    padding: 20px;
+    background-color: #f5f5f5;
+    overflow: hidden;
+}
+
+/* 外层纯Grid三列布局（核心） */
+.grid-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 20px;
+    height: calc(100vh - 40px);
+}
+
+/* 列容器：Grid两行（标题+内容区） */
+.column {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: 16px;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* 列标题（固定顶部，不随滚动） */
+.column-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #2d3748;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+}
+
+/* 计数徽章 */
+.count-badge {
+    background-color: #f0f8fb;
+    color: #4299e1;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: normal;
+}
+
+/* 内容区（滚动容器，仅此处滚动） */
+.content-area {
+    overflow-y: auto;
+    height: 100%;
+    -ms-overflow-style: none;
+    scrollbar-width: thin;
+    pointer-events: auto;
+}
+.content-area::-webkit-scrollbar {
+    width: 6px;
+}
+.content-area::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+.content-area::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+.content-area::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* 单词卡片（英文+释义+词性布局） */
+.word-card {
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* 英文单词样式 */
+.word {
+    font-size: 18px;
+    font-weight: bold;
+    color: #2d3748;
+    margin-bottom: 8px;
+}
+
+/* 释义容器 */
+.translations {
+    display: grid;
+    gap: 4px;
+}
+
+/* 单个释义项（释义+词性） */
+.translation-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+    font-size: 14px;
+}
+
+/* 释义文本 */
+.meaning {
+    color: #4a5568;
+}
+
+/* 词性标签（n. / v. 等） */
+.pos-tag {
+    background-color: #e8f4f8;
+    color: #2b6cb0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* 中间列选中卡片高亮（瞬间切换，无延迟） */
+.word-card.pending.active {
+    background-color: #e0f2fe;
+    border-color: #7dd3fc;
+    box-shadow: 0 2px 6px rgba(56, 189, 248, 0.15);
+    transition: none;
+}
+
+/* 左列：已牢记卡片样式 */
+.word-card.mastered {
+    border-left: 4px solid #48bb78;
+}
+.word-card.mastered.new {
+    background-color: #f0fdf4;
+    border-color: #34d399;
+}
+
+/* 右列：待记忆卡片样式 */
+.word-card.untrained {
+    border-left: 4px solid #ed8936;
+}
+.word-card.untrained.new {
+    background-color: #fef3c7;
+    border-color: #fbbf24;
+}
+
+/* 空状态样式 */
+.empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: #666;
+    font-size: 16px;
+    line-height: 1.8;
+}
