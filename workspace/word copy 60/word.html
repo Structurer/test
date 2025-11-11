@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词背诵助手（三列分类版）</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- 引入 JSZip 库（压缩包核心依赖） -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <style>
+        /* 隐藏原生文件选择框 */
+        #uploadInput {
+            display: none;
+        }
+
+        /* 顶部提示父容器：相对定位，占满屏幕宽度 */
+        .top-tip-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 34px; /* 与子容器高度一致 */
+            background-color: #e8f4f8;
+            border-bottom: 1px solid #bee3f8;
+            z-index: 999;
+        }
+
+        /* 子容器1：快捷键提示（居中） */
+        .shortcut-tip {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            color: #2b6cb0;
+            font-size: 14px;
+            line-height: 34px; /* 垂直居中 */
+            text-align: center;
+            pointer-events: none; /* 避免遮挡下方点击 */
+        }
+
+        /* 子容器2：操作反馈提示（靠左） */
+        .operation-feedback {
+            position: absolute;
+            top: 0;
+            left: 20px;
+            height: 100%;
+            color: #155724; /* 成功色默认 */
+            font-size: 14px;
+            line-height: 34px; /* 垂直居中 */
+            text-align: left;
+            z-index: 1000; /* 确保在快捷键提示上方显示 */
+            white-space: nowrap; /* 避免提示文字换行 */
+            overflow: hidden; /* 隐藏超出部分 */
+            text-overflow: ellipsis; /* 超出部分显示省略号 */
+            max-width: 50%; /* 限制最大宽度，避免遮挡快捷键提示 */
+        }
+
+        /* 反馈类型样式 */
+        .operation-feedback.error {
+            color: #721c24;
+        }
+        .operation-feedback.warning {
+            color: #856404;
+        }
+        .operation-feedback.info {
+            color: #2b6cb0;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部双提示容器：快捷键居中 + 操作反馈靠左 -->
+    <div class="top-tip-container">
+        <div class="shortcut-tip">
+            ←/空格：移至已牢记区 | ↑↓：切换单词 | →：移至待巩固区 | 输入单词后按Enter提交
+        </div>
+        <div class="operation-feedback" id="operationFeedback"></div>
+    </div>
+
+    <!-- 主内容区（顶部留空适配提示容器） -->
+    <div class="main-container" style="padding-top: 40px;">
+        <!-- 左列：已牢记单词区 -->
+        <div class="mastered-section">
+            <div class="mastered-header">
+                <div class="mastered-title">✅ 已牢记 <span class="count-badge" id="masteredCount">0</span></div>
+            </div>
+            <div class="mastered-list" id="masteredList">
+                <div class="empty-state">暂无已牢记单词<br>按←键或空格将中间单词移至此处</div>
+            </div>
+        </div>
+
+        <!-- 中间列：记忆区（核心操作区） -->
+        <div class="review-section">
+            <div class="review-top-fixed">
+                <h1>📚 记忆区 
+                    <span class="count-badge" id="reviewCount">0</span>
+                </h1>
+                <!-- 功能控制栏 -->
+                <div class="control-bar">
+                    <div class="left-btns">
+                        <button class="btn upload-btn" id="uploadBtn">📤 上传文件/压缩包</button>
+                        <input type="file" id="uploadInput" accept=".json,.zip">
+                        <button class="btn download-btn" id="downloadBtn" disabled>📥 下载进度包</button>
+                    </div>
+                    <div class="right-btns">
+                        <button class="btn" id="toggleMeaningBtn" disabled>隐藏释义</button>
+                        <button class="btn reset" id="shuffleBtn" disabled>随机顺序</button>
+                    </div>
+                </div>
+                <!-- 已删除：原中间反馈区 <div class="feedback" id="feedback"></div> -->
+                <!-- 单词输入框 -->
+                <input type="text" id="wordInput" placeholder="输入当前单词，按Enter提交">
+            </div>
+            <div class="review-card-scroll" id="reviewCardScroll">
+                <div id="wordCardWrapper">
+                    <div class="word-list" id="wordList">
+                        <div class="empty-state">
+                            请点击上方「上传文件/压缩包」<br>
+                            支持：单个单词JSON 或 历史进度压缩包
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右列：待巩固区 -->
+        <div class="untrained-section">
+            <div class="untrained-header">
+                <div class="untrained-title">📝 待巩固 <span class="count-badge" id="untrainedCount">0</span></div>
+            </div>
+            <div class="untrained-list" id="untrainedList">
+                <div class="empty-state">暂无待巩固单词<br>按→键或输入正确后按Enter将中间单词移至此处</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

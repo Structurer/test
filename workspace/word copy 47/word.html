@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词背诵助手（三列分类版）</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- 初始化首页的内联样式 -->
+    <style>
+        /* 输入框基础样式（可根据 styles.css 调整，避免冲突） */
+        #wordInput {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+            outline: none;
+        }
+        #wordInput:focus {
+            border-color: #4299e1;
+            box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <!-- 初始化首页 -->
+    <div class="init-screen" id="initScreen">
+        <h1>📚 单词背诵助手</h1>
+        <p>←/空格：移至已牢记区 &nbsp &nbsp ↑↓：切换单词 &nbsp &nbsp →：移至待巩固区 &nbsp &nbsp 输入单词后按Enter提交</p>
+        <button class="start-btn" id="startBtn">立即开始</button>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-container">
+        <!-- 左列：已牢记单词区 -->
+        <div class="mastered-section">
+            <div class="mastered-header">
+                <div class="mastered-title">✅ 已牢记 <span class="count-badge" id="masteredCount">0</span></div>
+            </div>
+            <div class="mastered-list" id="masteredList">
+                <div class="empty-state">暂无已牢记单词<br>按←键或空格将中间单词移至此处</div>
+            </div>
+        </div>
+
+        <!-- 中间列：记忆区（原待巩固） -->
+        <div class="review-section">
+            <div class="review-top-fixed">
+                <h1>📚 记忆区 
+                    <!-- 按钮保留在文字与计数之间，水平排列 -->
+                    <button class="btn" id="toggleMeaningBtn" disabled style="margin: 0 8px;">隐藏释义</button>
+                    <button class="btn reset" id="shuffleBtn" disabled>随机顺序</button>
+                    <span class="count-badge" id="reviewCount">0</span>
+                </h1>
+                <div class="feedback" id="feedback"></div>
+                <!-- 新增单词输入框（用于输入单词后按Enter提交） -->
+                <input type="text" id="wordInput" placeholder="输入当前单词，按Enter提交（不区分大小写）...">
+            </div>
+            <div class="review-card-scroll" id="reviewCardScroll">
+                <div id="wordCardWrapper">
+                    <div class="word-list" id="wordList">
+                        <div style="text-align: center; padding: 80px 20px; color: #4299e1; font-size: 20px; line-height: 2;">
+                            ⏳ 正在加载单词数据...<br>
+                            请稍候，加载完成后自动显示卡片
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右列：待巩固区（原待记忆） -->
+        <div class="untrained-section">
+            <div class="untrained-header">
+                <div class="untrained-title">📝 待巩固 <span class="count-badge" id="untrainedCount">0</span></div>
+            </div>
+            <div class="untrained-list" id="untrainedList">
+                <div class="empty-state">暂无待巩固单词<br>按→键或输入正确后按Enter将中间单词移至此处</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入外部 JS 文件 -->
+    <script src="app.js"></script>
+</body>
+</html>

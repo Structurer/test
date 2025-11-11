@@ -1,0 +1,445 @@
+/* 全局重置与基础样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+}
+
+.init-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+.init-screen h1 {
+  font-size: 36px;
+  color: #4299e1;
+  margin-bottom: 20px;
+  text-align: center;
+  letter-spacing: 2px;
+}
+.init-screen p {
+  font-size: 18px;
+  color: #666;
+  margin-bottom: 40px;
+  text-align: center;
+  padding: 0 20px;
+  max-width: 600px;
+}
+.init-screen .start-btn {
+  padding: 12px 24px;
+  font-size: 16px;
+  background-color: #4299e1;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+  box-shadow: 0 2px 8px rgba(66, 153, 225, 0.2);
+}
+.init-screen .start-btn:hover {
+  background-color: #3182ce;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+}
+.init-screen.hidden {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+body {
+  background-color: #f5f5f5;
+  overflow: hidden;
+}
+
+/* 主容器：三列布局 */
+.main-container {
+  display: flex;
+  gap: 20px;
+  padding: 30px;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+/* 三列统一样式 */
+.mastered-section, .untrained-section, .review-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  padding: 20px;
+}
+.mastered-section, .untrained-section {
+  background-color: #fafafa;
+}
+.review-section {
+  background-color: #f8f9fa;
+}
+
+/* 三列顶部标题容器 */
+.mastered-header, .untrained-header, .review-top-fixed {
+  padding: 0 0 8px 0;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 8px;
+}
+
+/* 列标题样式 */
+.mastered-title, .untrained-title, .review-top-fixed h1 {
+  font-size: 20px;
+  font-weight: bold;
+  color: #2d3748;
+  margin-bottom: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* 优化后输入框样式，适配页面清新风格 */
+#wordInput {
+  width: 100%;
+  padding: 12px 16px; /* 增加内边距，避免文字拥挤 */
+  margin: 10px 0;
+  box-sizing: border-box;
+  border: 1px solid #e8f4f8; /* 浅边框，贴合卡片风格 */
+  border-radius: 8px; /* 圆角更圆润，减少生硬感 */
+  font-size: 18px; /* 增大字体，输入更清晰 */
+  font-weight: bold; /* 字体稍粗，提升可读性 */
+  color: #2d3748; /* 文字颜色加深，更醒目 */
+  background-color: #ffffff; /* 纯白背景，与输入框外的浅灰形成对比 */
+  outline: none;
+  transition: all 0.3s ease; /* 所有变化加过渡，更丝滑 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* 轻微阴影，增加层次感 */
+
+  /* 其他原有样式不变 */
+  caret-color: #4299e1;
+  text-decoration-thickness: 6px; /* 光标宽度改为 2px（默认约 1px），数值越大越粗 */
+
+}
+
+/* 聚焦时样式（核心反馈） */
+#wordInput:focus {
+  border-color: #4299e1; /* 边框变色，与页面主色调一致 */
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15); /* 外发光，聚焦提示明显 */
+  background-color: #fafdff; /* 聚焦时背景微变，增强交互感 */
+}
+
+/* 输入时文字样式（可选，进一步优化体验） */
+#wordInput::placeholder {
+  color: #a0aec0; /* 占位文字灰色调，不刺眼 */
+  font-size: 16px;
+  font-weight: normal;
+}
+
+/* 正确状态：绿色边框闪烁动画 */
+#wordInput.success {
+  animation: flashGreen 0.5s ease;
+}
+/* 错误状态：粉色边框闪烁动画 */
+#wordInput.error {
+  animation: flashPink 0.5s ease;
+}
+
+/* 绿色闪烁动画：原边框→绿色→原边框 */
+@keyframes flashGreen {
+  0% { border-color: #e8f4f8; } /* 输入框默认边框色 */
+  50% { border-color: #34d399; box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15); } /* 左列绿色+发光 */
+  100% { border-color: #e8f4f8; }
+}
+/* 粉色闪烁动画：原边框→粉色→原边框 */
+@keyframes flashPink {
+  0% { border-color: #e8f4f8; } /* 输入框默认边框色 */
+  50% { border-color: #d946ef; box-shadow: 0 0 0 3px rgba(217, 70, 239, 0.15); } /* 右列粉色+发光 */
+  100% { border-color: #e8f4f8; }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* 输入框基础样式（可根据 styles.css 
+        #wordInput {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+            outline: none;
+        }
+        #wordInput:focus {
+            border-color: #4299e1;
+            box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.2);
+        }
+
+调整，避免冲突） */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* 计数徽章样式 */
+.count-badge {
+  font-size: 16px;
+  color: #4299e1;
+  font-weight: normal;
+  background-color: #f0f8fb;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: auto;
+}
+
+/* 左右列滚动区域 */
+.mastered-list, .untrained-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 0 8px 0;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  min-height: 0;
+}
+.mastered-list::-webkit-scrollbar, .untrained-list::-webkit-scrollbar {
+  display: none;
+}
+
+/* 中间列顶部固定区域 */
+.review-top-fixed {
+  position: relative;
+  top: 0;
+  background-color: #f8f9fa;
+  z-index: 10;
+  padding-top: 4px;
+}
+
+/* 控制栏按钮样式 */
+.control-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+  margin-top: 10px;
+  padding-top: 2px;
+  justify-content: space-between;
+  width: 100%;
+}
+.btn {
+  padding: 6px 12px;
+  font-size: 14px;
+  background-color: #4299e1;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+.btn:hover {
+  background-color: #3182ce;
+}
+.btn.reset {
+  background-color: #dc3545;
+}
+.btn.reset:hover {
+  background-color: #c82333;
+}
+.btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+/* 反馈区样式（优化后） */
+.feedback {
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 0;
+  margin-top: 8px; /* 增加顶部间距，避免贴控制栏 */
+}
+.feedback.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb; /* 边框强化，更醒目 */
+}
+.feedback.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb; /* 新增成功状态样式 */
+}
+
+/* 中间列卡片滚动区域（最终优化版：针对超大跨度滚动） */
+.review-card-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 0 8px 0;
+  min-height: 0;
+  overscroll-behavior-y: contain; /* 算力聚焦，不串场 */
+  padding-bottom: 300px; /* 增大底部缓冲，提前渲染更多卡片 */
+  will-change: scroll-position; /* 告诉浏览器提前准备渲染资源 */
+}
+
+/* 中间列滚动条美化 */
+.review-card-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.review-card-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+.review-card-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+.review-card-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+#wordCardWrapper {
+  width: 100%;
+}
+
+/* 单词卡片样式 */
+.mastered-card, .untrained-card {
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 8px;
+  transition: background-color 0.3s, border 0.3s, box-shadow 0.3s;
+}
+.mastered-card:hover, .untrained-card:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+.word-card {
+  background-color: #f5fafe;
+  border: 1px solid #e0eef7;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 8px;
+  transition: background-color 0.3s, border 0.3s, box-shadow 0.3s;
+}
+.word-card:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* 中间列选中卡片样式 */
+.word-card.active {
+  background-color: #e0f2fe;
+  border-color: #7dd3fc;
+  box-shadow: 0 2px 6px rgba(56, 189, 248, 0.15);
+}
+
+/* 最新标记卡片样式 */
+.mastered-card.latest {
+  background-color: #f0fdf4;
+  border-color: #34d399;
+  box-shadow: 0 2px 8px rgba(52, 211, 153, 0.1);
+}
+.untrained-card.latest {
+  background-color: #faf0f5;
+  border-color: #d946ef;
+  box-shadow: 0 2px 8px rgba(217, 70, 239, 0.1);
+}
+
+/* 单词标题样式 */
+.word-header {
+  margin-bottom: 8px;
+}
+.word {
+  font-size: 18px;
+  font-weight: bold;
+  color: #2d3748;
+  text-align: left !important;
+}
+
+/* 释义容器样式 */
+.translations-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 释义和词性样式 */
+.translation-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.meaning {
+  color: #4a5568;
+  display: inline-block;
+}
+.pos-tag {
+  background-color: #e8f4f8;
+  color: #2b6cb0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* 释义隐藏控制 */
+[data-controlled="true"] .translation-item .meaning.hidden {
+  display: none;
+}
+.mastered-card .translation-item .meaning.hidden,
+.untrained-card .translation-item .meaning.hidden {
+  display: inline;
+}
+
+/* 空状态样式 */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-size: 14px;
+}
