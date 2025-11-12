@@ -6,7 +6,7 @@
     <title>单词背诵助手（三列分类版）</title>
     <link rel="stylesheet" href="styles.css">
     <!-- 引入 JSZip 库（压缩包核心依赖） -->
-    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="./jszip.min.js"></script>
     <style>
         /* 隐藏原生文件选择框 */
         #uploadInput {
@@ -66,15 +66,60 @@
         .operation-feedback.info {
             color: #2b6cb0;
         }
+
+        /* 词汇表名称展示样式（靠右） */
+        .vocabulary-name-display {
+            position: absolute;
+            top: 0;
+            right: 20px;
+            height: 100%;
+            line-height: 34px; /* 与父容器高度一致，垂直居中 */
+            font-size: 14px;
+            color: #2b6cb0; /* 复用页面现有文字色 */
+            padding: 0 8px;
+            border: 1px solid #bee3f8; /* 复用父容器边框色 */
+            border-radius: 4px;
+            cursor: pointer; /* 提示可点击 */
+            max-width: 200px; /* 限制宽度，避免文字过长 */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis; /* 超出显示省略号 */
+            transition: border-color 0.3s ease; /* hover过渡效果 */
+        }
+        /* 鼠标悬浮时边框变色，增强交互感 */
+        .vocabulary-name-display:hover {
+            border-color: #4299e1; /* 复用按钮 hover 色 */
+        }
+
+        /* 词汇表名称编辑输入框样式 */
+        .vocabulary-name-input {
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%); /* 垂直居中 */
+            padding: 2px 8px;
+            font-size: 14px;
+            color: #2d3748; /* 复用单词文字色 */
+            border: 1px solid #409eff; /* 聚焦边框色 */
+            border-radius: 4px;
+            outline: none;
+            width: 200px; /* 与展示元素宽度一致 */
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* 轻微阴影 */
+        }
     </style>
 </head>
 <body>
-    <!-- 顶部双提示容器：快捷键居中 + 操作反馈靠左 -->
+    <!-- 顶部双提示容器：快捷键居中 + 操作反馈靠左 + 词汇表名称靠右 -->
     <div class="top-tip-container">
         <div class="shortcut-tip">
             ←/空格：移至已牢记区 | ↑↓：切换单词 | →：移至待巩固区 | 输入单词后按Enter提交
         </div>
         <div class="operation-feedback" id="operationFeedback"></div>
+        <!-- 新增：词汇表名称展示（双击可编辑） -->
+        <div class="vocabulary-name-display" id="vocabularyNameDisplay" title="双击可编辑词汇表名称">
+            未选择文件
+        </div>
     </div>
 
     <!-- 主内容区（顶部留空适配提示容器） -->

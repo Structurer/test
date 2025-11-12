@@ -11,6 +11,8 @@ let untrainedWords = [];   // 待巩固单词数组
 let currentIndex = 0;      // 当前选中记忆区单词索引
 let isMeaningHidden = false; // 释义显示状态
 let isInited = false;      // 应用初始化状态
+// 新增：词汇表名称（初始值与HTML默认文本一致，用于展示、编辑、下载命名）
+let vocabularyName = "未选择文件";
 
 // DOM元素缓存（与HTML ID对应，修改feedback为新容器）
 const dom = {
@@ -32,9 +34,12 @@ const dom = {
 };
 
 /**
- * 第一步：绑定基础事件（上传、下载、释义切换等）
+ * 模块1：绑定基础事件（上传、下载、释义切换等）
  */
 function initBaseEvents() {
+    // 新增：调用词汇表名称双击编辑绑定函数（优先初始化）
+    bindVocabularyNameEdit();
+
     // 1. 上传按钮点击事件（触发文件选择框）
     dom.uploadBtn?.addEventListener('click', () => {
         dom.uploadInput?.click();
@@ -60,7 +65,7 @@ function initBaseEvents() {
 }
 
 /**
- * 第二步：文件上传处理（核心：智能识别文件类型）
+ * 模块2：文件上传处理（核心：智能识别文件类型）
  */
 async function handleFileUpload(e) {
     const file = e.target.files[0];
@@ -95,7 +100,7 @@ async function handleFileUpload(e) {
 }
 
 /**
- * 第三步：处理单个JSON文件上传（首次使用/原始单词库）
+ * 模块3：处理单个JSON文件上传（首次使用/原始单词库）
  */
 async function handleJsonUpload(file) {
     const text = await readFileAsText(file);
@@ -106,15 +111,26 @@ async function handleJsonUpload(file) {
         throw new Error('JSON格式错误，需包含单词数组（每个项含word和translations字段）');
     }
 
+    // 新增：从JSON文件名提取vocabularyName（不含后缀，从后往前找第一个横杠）
+    const fileNameWithoutExt = file.name.replace(/\.[^.]+$/, ''); // 去掉文件后缀（如.json）
+    const lastHyphenIndex = fileNameWithoutExt.lastIndexOf('-'); // 从后往前找第一个横杠
+    // 有横杠则取横杠后内容，无横杠则取完整文件名（不含后缀）
+    vocabularyName = lastHyphenIndex > -1 
+        ? fileNameWithoutExt.slice(lastHyphenIndex + 1) 
+        : fileNameWithoutExt;
+
     // 初始化数据：JSON内容作为记忆区，其他列空
     toReviewWords = [...jsonData];
     masteredWords = [];
     untrainedWords = [];
     currentIndex = 0; // 重置当前选中索引
+
+    // 新增：更新HTML中的词汇表名称显示
+    document.getElementById('vocabularyNameDisplay').textContent = vocabularyName;
 }
 
 /**
- * 第四步：处理压缩包上传（有历史进度）
+ * 模块4：处理压缩包上传（有历史进度）
  */
 async function handleZipUpload(file) {
     // 检查是否加载JSZip库
@@ -142,15 +158,26 @@ async function handleZipUpload(file) {
         fileData[fileName] = parseJson(text, fileName);
     }
 
+    // 新增：从压缩包文件名提取vocabularyName（不含后缀，从后往前找第一个横杠）
+    const fileNameWithoutExt = file.name.replace(/\.[^.]+$/, ''); // 去掉文件后缀（如.zip）
+    const lastHyphenIndex = fileNameWithoutExt.lastIndexOf('-'); // 从后往前找第一个横杠
+    // 有横杠则取横杠后内容，无横杠则取完整文件名（不含后缀）
+    vocabularyName = lastHyphenIndex > -1 
+        ? fileNameWithoutExt.slice(lastHyphenIndex + 1) 
+        : fileNameWithoutExt;
+
     // 赋值到全局数组
     toReviewWords = fileData['记忆区.json'] || [];
     masteredWords = fileData['已牢记.json'] || [];
     untrainedWords = fileData['待巩固.json'] || [];
     currentIndex = Math.min(currentIndex, toReviewWords.length - 1); // 防止索引越界
+
+    // 新增：更新HTML中的词汇表名称显示
+    document.getElementById('vocabularyNameDisplay').textContent = vocabularyName;
 }
 
 /**
- * 第五步：工具函数 - 读取文件为文本
+ * 模块5：工具函数 - 读取文件为文本
  */
 function readFileAsText(file) {
     return new Promise((resolve, reject) => {
@@ -162,7 +189,7 @@ function readFileAsText(file) {
 }
 
 /**
- * 第六步：工具函数 - 读取文件为ArrayBuffer（用于压缩包）
+ * 模块6：工具函数 - 读取文件为ArrayBuffer（用于压缩包）
  */
 function readFileAsArrayBuffer(file) {
     return new Promise((resolve, reject) => {
@@ -174,7 +201,7 @@ function readFileAsArrayBuffer(file) {
 }
 
 /**
- * 第七步：工具函数 - 解析JSON（含错误处理）
+ * 模块7：工具函数 - 解析JSON（含错误处理）
  */
 function parseJson(text, fileName) {
     try {
@@ -185,7 +212,7 @@ function parseJson(text, fileName) {
 }
 
 /**
- * 第八步：工具函数 - 显示反馈信息（适配顶部左侧新容器，解决频繁触发闪动问题）
+ * 模块8：工具函数 - 显示反馈信息（适配顶部左侧新容器，解决频繁触发闪动问题）
  */
 function showFeedback(message, type = 'info') {
     if (!dom.feedbackEl) return;
@@ -206,8 +233,35 @@ function showFeedback(message, type = 'info') {
     }, 3000);
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /**
- * 第九步：初始化单词输入框（聚焦+基础按键拦截）
+ * 模块9：初始化单词输入框（聚焦+基础按键拦截）
  */
 function initWordInput() {
     if (!dom.wordInput) return;
@@ -232,7 +286,47 @@ function initWordInput() {
 }
 
 /**
- * 第十步：下载进度压缩包（修复：添加状态判断+压缩参数）
+ * 模块10：新增 - 绑定词汇表名称双击编辑事件
+ */
+function bindVocabularyNameEdit() {
+    const displayEl = document.getElementById('vocabularyNameDisplay');
+    const containerEl = displayEl.parentElement; // 父容器（top-tip-container）
+
+    // 双击展示元素触发编辑
+    displayEl.addEventListener('dblclick', () => {
+        // 1. 创建临时输入框
+        const inputEl = document.createElement('input');
+        inputEl.type = 'text';
+        inputEl.className = 'vocabulary-name-input'; // 应用CSS样式
+        inputEl.value = vocabularyName; // 初始值为当前词汇表名称
+
+        // 2. 用输入框替换展示元素
+        containerEl.replaceChild(inputEl, displayEl);
+        inputEl.focus(); // 自动聚焦，方便用户直接输入
+
+        // 3. 定义保存逻辑（失焦或按Enter键）
+        const saveEditedName = () => {
+            // 处理空值：用户输入为空时用默认值
+            const newName = inputEl.value.trim() || "未命名词汇表";
+            // 更新全局变量和HTML展示
+            vocabularyName = newName;
+            displayEl.textContent = newName;
+            // 用展示元素替换输入框
+            containerEl.replaceChild(displayEl, inputEl);
+            // 显示修改成功的反馈
+            showFeedback(`词汇表名称已更新为：${newName}`, 'info');
+        };
+
+        // 绑定保存事件：失焦保存 + 按Enter保存
+        inputEl.addEventListener('blur', saveEditedName);
+        inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') saveEditedName();
+        });
+    });
+}
+
+/**
+ * 模块11：下载进度压缩包（优化：使用vocabularyName生成文件名）
  */
 async function downloadProgressPackage() {
     // 双重判断，避免未加载数据时点击
@@ -265,10 +359,10 @@ async function downloadProgressPackage() {
             compressionOptions: { level: 6 } // 平衡压缩率和速度
         });
 
-        // 4. 自动命名（时间戳精确到分钟，避免重名）
+        // 4. 自动命名（优化：用vocabularyName替代固定文本）
         const now = new Date();
         const timeStr = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
-        const fileName = `${timeStr}-单词复习进度.zip`;
+        const fileName = `${timeStr}-${vocabularyName}.zip`; // 核心修改：使用词汇表名称
 
         // 5. 触发下载
         const url = URL.createObjectURL(content);
@@ -292,7 +386,7 @@ async function downloadProgressPackage() {
 }
 
 /**
- * 第十一步：切换释义显示状态（修复：同步DOM更新）
+ * 模块12：切换释义显示状态（修复：同步DOM更新）
  */
 function toggleMeaning() {
     isMeaningHidden = !isMeaningHidden;
@@ -308,7 +402,7 @@ function toggleMeaning() {
 }
 
 /**
- * 第十二步：打乱记忆区单词
+ * 模块13：打乱记忆区单词
  */
 function shuffleToReviewWords() {
     if (toReviewWords.length === 0) {
@@ -324,7 +418,7 @@ function shuffleToReviewWords() {
 }
 
 /**
- * 第十三步：更新所有UI
+ * 模块14：更新所有UI
  */
 function updateAllUI() {
     updateReviewWordsUI();
@@ -334,7 +428,7 @@ function updateAllUI() {
 }
 
 /**
- * 第十四步：更新记忆区单词UI（核心渲染逻辑）
+ * 模块15：更新记忆区单词UI（核心渲染逻辑）
  */
 function updateReviewWordsUI() {
     if (!dom.wordListEl) return;
@@ -366,7 +460,7 @@ function updateReviewWordsUI() {
 }
 
 /**
- * 第十五步：更新已牢记单词UI
+ * 模块16：更新已牢记单词UI
  */
 function updateMasteredWordsUI() {
     if (!dom.masteredList) return;
@@ -387,8 +481,35 @@ function updateMasteredWordsUI() {
     forceScrollToTop(dom.masteredList);
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /**
- * 第十六步：更新待巩固单词UI
+ * 模块17：更新待巩固单词UI
  */
 function updateUntrainedWordsUI() {
     if (!dom.untrainedList) return;
@@ -409,31 +530,8 @@ function updateUntrainedWordsUI() {
     forceScrollToTop(dom.untrainedList);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /**
- * 第十七步：创建单词卡片（通用函数）
+ * 模块18：创建单词卡片（通用函数）
  */
 function createWordCard(wordObj, isActive, cardClass, isLatest, isControlled) {
     const card = document.createElement('div');
@@ -488,7 +586,7 @@ function createWordCard(wordObj, isActive, cardClass, isLatest, isControlled) {
 }
 
 /**
- * 第十八步：激活当前单词（记忆区）+ 滚动置顶
+ * 模块19：激活当前单词（记忆区）+ 滚动置顶
  */
 function activateCurrentWord() {
     if (toReviewWords.length === 0) return;
@@ -504,7 +602,7 @@ function activateCurrentWord() {
 }
 
 /**
- * 第十九步：防抖工具函数（滚动优化）
+ * 模块20：防抖工具函数（滚动优化）
  */
 function debounce(func, delay) {
     let timer = null;
@@ -515,7 +613,7 @@ function debounce(func, delay) {
 }
 
 /**
- * 第二十步：记忆区滚动到当前选中单词
+ * 模块21：记忆区滚动到当前选中单词
  */
 const debouncedScrollToTarget = debounce(() => {
     const cards = document.querySelectorAll('.word-card');
@@ -533,7 +631,7 @@ const debouncedScrollToTarget = debounce(() => {
 }, 100);
 
 /**
- * 第二十一步：强制滚动到顶部（已牢记/待巩固列）
+ * 模块22：强制滚动到顶部（已牢记/待巩固列）
  */
 function forceScrollToTop(container) {
     if (container && container.scrollHeight > 0) {
@@ -542,7 +640,7 @@ function forceScrollToTop(container) {
 }
 
 /**
- * 第二十二步：隐藏/显示记忆区释义
+ * 模块23：隐藏/显示记忆区释义
  */
 function hideMiddleTranslations() {
     document.querySelectorAll('[data-controlled="true"] .meaning').forEach(el => {
@@ -557,7 +655,7 @@ function showMiddleTranslations() {
 }
 
 /**
- * 第二十三步：更新三列单词计数
+ * 模块24：更新三列单词计数
  */
 function updateCounts() {
     if (dom.masteredCountEl) dom.masteredCountEl.textContent = masteredWords.length;
@@ -570,7 +668,7 @@ function updateCounts() {
 }
 
 /**
- * 第二十四步：单词移动 - 移至已牢记（左移/空格）
+ * 模块25：单词移动 - 移至已牢记（左移/空格）
  */
 async function moveToMastered() {
     if (toReviewWords.length === 0) return;
@@ -588,7 +686,7 @@ async function moveToMastered() {
 }
 
 /**
- * 第二十五步：单词移动 - 移至待巩固（右移/输入正确）
+ * 模块26：单词移动 - 移至待巩固（右移/输入正确）
  */
 async function moveToUntrained() {
     if (toReviewWords.length === 0) return;
@@ -606,7 +704,7 @@ async function moveToUntrained() {
 }
 
 /**
- * 第二十六步：切换单词（上下键）
+ * 模块27：切换单词（上下键）
  */
 function switchWord(direction) {
     if (toReviewWords.length === 0) return;
@@ -623,33 +721,7 @@ function switchWord(direction) {
 }
 
 /**
- * 第二十七步：输入验证（Enter键）
- */
-function validateInputWord() {
-    if (!dom.wordInput || toReviewWords.length === 0) return;
-
-    const inputValue = dom.wordInput.value.trim();
-    const currentWord = toReviewWords[currentIndex]?.word?.trim() || '';
-
-    if (inputValue.toLowerCase() === currentWord.toLowerCase()) {
-        // 输入正确：移至待巩固
-        dom.wordInput.classList.add('success');
-        moveToUntrained();
-        dom.wordInput.value = '';
-        setTimeout(() => dom.wordInput.classList.remove('success'), 500);
-    } else {
-        // 输入错误：高亮提示
-        dom.wordInput.classList.add('error');
-        showFeedback(`❌ 输入错误，正确单词为「${currentWord}」`, 'error');
-        dom.wordInput.select();
-        setTimeout(() => dom.wordInput.classList.remove('error'), 500);
-    }
-
-    dom.wordInput.focus();
-}
-
-/**
- * 第二十八步：完善键盘快捷键（输入框+全局）
+ * 模块28：完善键盘快捷键（输入框+全局）
  */
 function initKeyboardEvents() {
     // 输入框聚焦时的快捷键
@@ -750,4 +822,30 @@ function initKeyboardEvents() {
             updateCounts();
         }
     });
+}
+
+/**
+ * 模块29：输入验证（Enter键）
+ */
+function validateInputWord() {
+    if (!dom.wordInput || toReviewWords.length === 0) return;
+
+    const inputValue = dom.wordInput.value.trim();
+    const currentWord = toReviewWords[currentIndex]?.word?.trim() || '';
+
+    if (inputValue.toLowerCase() === currentWord.toLowerCase()) {
+        // 输入正确：移至待巩固
+        dom.wordInput.classList.add('success');
+        moveToUntrained();
+        dom.wordInput.value = '';
+        setTimeout(() => dom.wordInput.classList.remove('success'), 500);
+    } else {
+        // 输入错误：高亮提示
+        dom.wordInput.classList.add('error');
+        showFeedback(`❌ 输入错误，正确单词为「${currentWord}」`, 'error');
+        dom.wordInput.select();
+        setTimeout(() => dom.wordInput.classList.remove('error'), 500);
+    }
+
+    dom.wordInput.focus();
 }
