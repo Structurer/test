@@ -1,0 +1,48 @@
+
+
+
+/* 词汇表名称相关样式（新增，适配原有清新风格） */
+.vocabulary-name-display {
+  position: absolute;
+  top: 0;
+  right: 20px;
+  height: 100%;
+  line-height: 34px; /* 与顶部容器高度一致，垂直居中 */
+  font-size: 14px;
+  color: #2b6cb0; /* 复用原有文字色，保持风格统一 */
+  padding: 0 8px;
+  border: 1px solid #bee3f8; /* 复用顶部容器边框色 */
+  border-radius: 4px; /* 与按钮圆角一致 */
+  cursor: pointer; /* 提示可双击编辑 */
+  max-width: 200px; /* 限制宽度，避免文字过长遮挡 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* 超出部分显示省略号 */
+  transition: border-color 0.3s ease; /* hover过渡，增强交互感 */
+}
+
+/* 鼠标悬浮时边框变色（复用按钮hover主色调） */
+.vocabulary-name-display:hover {
+  border-color: #4299e1;
+}
+
+/* 词汇表名称编辑输入框样式（双击时显示） */
+.vocabulary-name-input {
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%); /* 精准垂直居中 */
+  padding: 2px 8px;
+  font-size: 14px;
+  color: #2d3748; /* 复用单词文字色 */
+  border: 1px solid #409eff; /* 聚焦边框色，与输入框聚焦风格一致 */
+  border-radius: 4px;
+  outline: none;
+  width: 200px; /* 与展示元素宽度匹配 */
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* 轻微阴影，增加层次感 */
+}
+
+
+
+
